@@ -71,9 +71,10 @@ function flyTo(x, y, z, lookX, lookY, lookZ) {
 let player = null
 let currentProfession = 'wayfarer'
 let playerName = 'Tariq (Roku)'
-// Spawn position: Dubai (lng 55.2, lat 25.2)
+// Spawn position: beside Dubai marker (lng 55.2, lat 25.2) on UAE land
 const spawnCoord = projectCoord(55.2, 25.2, SCALE)
-const spawnPos = { x: spawnCoord.x, y: 0.5, z: spawnCoord.z }
+// Offset by 4 units so player stands freely beside the red box, not inside it
+const spawnPos = { x: spawnCoord.x + 4.0, y: 0.5, z: spawnCoord.z + 4.0 }
 
 function spawnPlayer(profession = currentProfession, name = playerName) {
   if (player && player.group) {
@@ -88,8 +89,11 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
 function focusPlayer() {
   if (!player) return
   const p = player.group.position
-  flyTo(p.x + 6, p.y + 4, p.z + 8, p.x, p.y + 1.2, p.z)
+  flyTo(p.x + 3.5, p.y + 2.5, p.z + 4.5, p.x, p.y + 1.2, p.z)
 }
+
+// Terrain references for UI toggles
+let terrainRef = null
 
 // Setup navigation & profession buttons
 function setupUI() {
@@ -106,7 +110,7 @@ function setupUI() {
       const loc = testLocations.find(l => l.name === locName)
       if (loc) {
         const { x, z } = projectCoord(loc.lng, loc.lat, SCALE)
-        flyTo(x + 25, 35, z + 35, x, 1.5, z)
+        flyTo(x + 15, 20, z + 20, x, 1.5, z)
       }
     })
   })
@@ -115,6 +119,16 @@ function setupUI() {
   const focusBtn = document.getElementById('btn-focus-player')
   if (focusBtn) {
     focusBtn.addEventListener('click', focusPlayer)
+  }
+
+  // Toggle test boxes button
+  const toggleBoxesBtn = document.getElementById('btn-toggle-boxes')
+  if (toggleBoxesBtn && terrainRef?.testBoxGroup) {
+    toggleBoxesBtn.addEventListener('click', () => {
+      const visible = !terrainRef.testBoxGroup.visible
+      terrainRef.testBoxGroup.visible = visible
+      toggleBoxesBtn.textContent = visible ? 'Hide Test Boxes 🟥' : 'Show Test Boxes 🟥'
+    })
   }
 
   // Step 3 profession switcher buttons
@@ -145,12 +159,13 @@ async function init() {
   try {
     loadingStatus.textContent = 'Generating continent 3D meshes...'
     const terrainData = await createWorldTerrain(scene, '/assets/world.geojson')
+    terrainRef = terrainData
 
     // Spawn player character (Step 3)
     spawnPlayer(currentProfession, playerName)
 
     // Position camera near player initially for immediate visibility
-    camera.position.set(spawnPos.x + 8, spawnPos.y + 5, spawnPos.z + 10)
+    camera.position.set(spawnPos.x + 3.5, spawnPos.y + 2.5, spawnPos.z + 4.5)
     controls.target.set(spawnPos.x, spawnPos.y + 1.2, spawnPos.z)
     controls.update()
 

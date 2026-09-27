@@ -181,36 +181,6 @@ export async function createWorldTerrain(scene, geojsonUrl = '/assets/world.geoj
 }
 
 /**
- * Creates a floating text label sprite for test markers
- */
-function createTextLabel(text) {
-  const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 64
-  const ctx = canvas.getContext('2d')
-
-  ctx.fillStyle = 'rgba(15, 20, 30, 0.85)'
-  ctx.strokeStyle = '#ff4444'
-  ctx.lineWidth = 4
-  ctx.beginPath()
-  ctx.roundRect(4, 4, 248, 56, 12)
-  ctx.fill()
-  ctx.stroke()
-
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 26px sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(text, 128, 32)
-
-  const texture = new THREE.CanvasTexture(canvas)
-  const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false })
-  const sprite = new THREE.Sprite(spriteMaterial)
-  sprite.scale.set(16, 4, 1)
-  return sprite
-}
-
-/**
  * Step 2 — Place red BoxGeometry(2,2,2) boxes at known real-world coordinates to validate projection.
  */
 export function addTestValidationBoxes(scene) {
@@ -219,7 +189,7 @@ export function addTestValidationBoxes(scene) {
 
   const boxGeo = new THREE.BoxGeometry(2, 2, 2)
   const boxMat = new THREE.MeshLambertMaterial({
-    color: 0xff1111,
+    color: 0xff2222,
     emissive: 0x330000
   })
 
@@ -235,12 +205,7 @@ export function addTestValidationBoxes(scene) {
     box.name = `TestBox_${loc.name}`
     box.userData = { isTestBox: true, ...loc }
 
-    // Floating text label
-    const label = createTextLabel(loc.name)
-    label.position.set(x, 4.5, z)
-
     group.add(box)
-    group.add(label)
   })
 
   scene.add(group)
