@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { createWorldTerrain, projectCoord, testLocations, SCALE } from './world/terrain.js'
+import { createCharacter } from './player/character.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -26,16 +27,14 @@ const camera = new THREE.PerspectiveCamera(
   0.5,
   5000
 )
-camera.position.set(0, 500, 450)
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.maxPolarAngle = Math.PI / 2 - 0.02 // don't go below ground
-controls.minDistance = 10
+controls.minDistance = 2
 controls.maxDistance = 1800
-controls.target.set(0, 0, 0)
 
 // Lighting (Step 1 requirement 8)
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.75)
@@ -68,9 +67,34 @@ function flyTo(x, y, z, lookX, lookY, lookZ) {
   targetLookAt = new THREE.Vector3(lookX, lookY, lookZ)
 }
 
-// Setup navigation buttons for Step 2 validation
-function setupTestNav() {
-  const buttons = document.querySelectorAll('.test-btn')
+// Player state (Step 3)
+let player = null
+let currentProfession = 'wayfarer'
+let playerName = 'Tariq (Roku)'
+// Spawn position: Dubai (lng 55.2, lat 25.2)
+const spawnCoord = projectCoord(55.2, 25.2, SCALE)
+const spawnPos = { x: spawnCoord.x, y: 0.5, z: spawnCoord.z }
+
+function spawnPlayer(profession = currentProfession, name = playerName) {
+  if (player && player.group) {
+    scene.remove(player.group)
+  }
+  player = createCharacter(profession, name)
+  player.group.position.set(spawnPos.x, spawnPos.y, spawnPos.z)
+  scene.add(player.group)
+  return player
+}
+
+function focusPlayer() {
+  if (!player) return
+  const p = player.group.position
+  flyTo(p.x + 6, p.y + 4, p.z + 8, p.x, p.y + 1.2, p.z)
+}
+
+// Setup navigation & profession buttons
+function setupUI() {
+  // Step 2 validation location buttons
+  const buttons = document.querySelectorAll('.test-btn[data-loc]')
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
       const locName = btn.dataset.loc
@@ -86,6 +110,23 @@ function setupTestNav() {
       }
     })
   })
+
+  // Focus player button
+  const focusBtn = document.getElementById('btn-focus-player')
+  if (focusBtn) {
+    focusBtn.addEventListener('click', focusPlayer)
+  }
+
+  // Step 3 profession switcher buttons
+  const profButtons = document.querySelectorAll('.prof-btn')
+  profButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      profButtons.forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      currentProfession = btn.dataset.prof
+      spawnPlayer(currentProfession, playerName)
+    })
+  })
 }
 
 // Window resize handler
@@ -95,8 +136,8 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
-// Initialize World
-async function initWorld() {
+// Initialize World & Player
+async function init() {
   const loadingOverlay = document.getElementById('loading-overlay')
   const loadingStatus = document.getElementById('loading-status')
   const hudStats = document.getElementById('hud-stats')
@@ -105,9 +146,17 @@ async function initWorld() {
     loadingStatus.textContent = 'Generating continent 3D meshes...'
     const terrainData = await createWorldTerrain(scene, '/assets/world.geojson')
 
-    hudStats.textContent = `✓ ${terrainData.totalCountries} countries extruded • ${testLocations.length} validation markers placed`
+    // Spawn player character (Step 3)
+    spawnPlayer(currentProfession, playerName)
 
-    setupTestNav()
+    // Position camera near player initially for immediate visibility
+    camera.position.set(spawnPos.x + 8, spawnPos.y + 5, spawnPos.z + 10)
+    controls.target.set(spawnPos.x, spawnPos.y + 1.2, spawnPos.z)
+    controls.update()
+
+    hudStats.textContent = `✓ ${terrainData.totalCountries} countries extruded • Player: ${currentProfession} • Dubai`
+
+    setupUI()
 
     // Hide loading screen
     setTimeout(() => {
@@ -132,15 +181,20 @@ function animate() {
     camera.position.lerp(targetCamPos, 0.06)
     controls.target.lerp(targetLookAt, 0.06)
 
-    if (camera.position.distanceTo(targetCamPos) < 0.5) {
+    if (camera.position.distanceTo(targetCamPos) < 0.2) {
       targetCamPos = null
       targetLookAt = null
     }
+  }
+
+  // Billboard effect: name tag always faces camera (Step 3 requirement)
+  if (player && player.nameTag) {
+    player.nameTag.quaternion.copy(camera.quaternion)
   }
 
   controls.update()
   renderer.render(scene, camera)
 }
 
-initWorld()
+init()
 animate()
