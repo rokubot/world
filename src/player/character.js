@@ -6,30 +6,33 @@ import * as THREE from 'three'
 export const PROFESSIONS = {
   wayfarer: {
     name: 'Wayfarer',
-    torsoColor: 0x8b6914,
-    trouserColor: 0x4a5a2a,
-    hairColor: 0x3a2010,
-    accessoryType: 'sunglasses_beanie',
-    accentColor: 0xc9a84c,
+    torsoColor: 0x945a24, // warm leather adventurer jacket
+    trouserColor: 0x24354b, // classic dark indigo denim jeans
+    hairColor: 0x42200a, // rich chestnut brown
+    accessoryType: 'sunglasses_adventurer',
+    accentColor: 0xd4af37, // gold accent
+    beltColor: 0x4a2812, // warm saddle brown leather belt
     torsoHeight: 1.0
   },
   artificer: {
     name: 'Artificer',
     torsoColor: 0x3e444c,
-    trouserColor: 0x22262c,
+    trouserColor: 0x282f3a, // tactical slate cargo pants
     hairColor: 0x1a1a1a,
     accessoryType: 'cyber_visor_headphones',
     accentColor: 0xff6600,
+    beltColor: 0x14171d, // dark utility belt
     torsoHeight: 1.0,
     hasApron: true
   },
   mystic: {
     name: 'Mystic',
     torsoColor: 0x4a1a6b,
-    trouserColor: 0x2a0a4a,
+    trouserColor: 0x220938,
     hairColor: 0x6b3a8a,
     accessoryType: 'mystic_cowl_visor',
     accentColor: 0xa855f7,
+    beltColor: 0x130621,
     torsoHeight: 1.25
   },
   tycoon: {
@@ -39,6 +42,7 @@ export const PROFESSIONS = {
     hairColor: 0x1a1a1a,
     accessoryType: 'designer_shades_chain',
     accentColor: 0xe5c07b,
+    beltColor: 0x382212, // luxury leather belt
     torsoHeight: 1.0
   }
 }
@@ -93,47 +97,64 @@ function createRobloxHead(skinMat) {
 function addCreativeCovering(headGroup, prof) {
   const type = prof.accessoryType
 
-  if (type === 'sunglasses_beanie') {
-    // 1. Wayfarer Aviator Sunglasses (Dark tinted curved lenses + gold frame on front +Z)
-    const glassMat = new THREE.MeshLambertMaterial({ color: 0x11161d, roughness: 0.2 })
-    const frameMat = new THREE.MeshLambertMaterial({ color: 0xc9a84c })
+  if (type === 'sunglasses_adventurer' || type === 'sunglasses_beanie') {
+    // 1. Wayfarer Aviator Sunglasses (Dark curved lenses + gold frame on front +Z)
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x10141c, roughness: 0.15 })
+    const frameMat = new THREE.MeshLambertMaterial({ color: 0xd4af37 }) // sleek gold
 
-    const leftLens = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.15, 0.08), glassMat)
+    const leftLens = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.08), glassMat)
     leftLens.position.set(-0.16, 0.06, 0.38)
 
-    const rightLens = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.15, 0.08), glassMat)
+    const rightLens = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.08), glassMat)
     rightLens.position.set(0.16, 0.06, 0.38)
 
-    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.03, 0.09), frameMat)
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.04, 0.09), frameMat)
     bridge.position.set(0, 0.09, 0.38)
 
-    const topBar = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.03, 0.08), frameMat)
+    const topBar = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.04, 0.08), frameMat)
     topBar.position.set(0, 0.15, 0.38)
 
-    headGroup.add(leftLens, rightLens, bridge, topBar)
+    // Side temple bars connecting to ears
+    const leftTemple = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.38), frameMat)
+    leftTemple.position.set(-0.35, 0.08, 0.18)
+    const rightTemple = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.38), frameMat)
+    rightTemple.position.set(0.35, 0.08, 0.18)
 
-    // 2. Stylish Beanie (similar to red Canada beanie in Attachment 3)
-    const beanieMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c }) // vibrant red beanie
-    const beanieWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+    headGroup.add(leftLens, rightLens, bridge, topBar, leftTemple, rightTemple)
 
-    // Beanie dome
-    const beanieGeo = new THREE.SphereGeometry(0.42, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2)
-    beanieGeo.scale(1.02, 0.75, 1.02)
-    const beanie = new THREE.Mesh(beanieGeo, beanieMat)
-    beanie.position.y = 0.22
-    headGroup.add(beanie)
-
-    // Folded rim / cuff around forehead
-    const cuffGeo = new THREE.CylinderGeometry(0.44, 0.44, 0.16, 24)
-    const cuff = new THREE.Mesh(cuffGeo, beanieWhiteMat)
-    cuff.position.y = 0.22
-    headGroup.add(cuff)
-
-    // Small tuft of hair peeking under the sides & back
+    // 2. Stylish Adventurer Layered Hair (textured crown + swept front bangs, no leftover blocks)
     const hairMat = new THREE.MeshLambertMaterial({ color: prof.hairColor })
-    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.2), hairMat)
-    backHair.position.set(0, 0.05, -0.32)
+
+    // Voluminous hair crown dome
+    const crownGeo = new THREE.SphereGeometry(0.44, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2)
+    crownGeo.scale(1.05, 0.82, 1.06)
+    const crown = new THREE.Mesh(crownGeo, hairMat)
+    crown.position.set(0, 0.22, 0)
+    crown.castShadow = true
+    headGroup.add(crown)
+
+    // Side-swept front bangs
+    const bang1 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.14), hairMat)
+    bang1.position.set(-0.16, 0.25, 0.36)
+    bang1.rotation.z = 0.22
+    bang1.rotation.y = 0.08
+
+    const bang2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.15, 0.14), hairMat)
+    bang2.position.set(0.08, 0.27, 0.38)
+    bang2.rotation.z = -0.15
+
+    const bang3 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.13, 0.12), hairMat)
+    bang3.position.set(0.24, 0.25, 0.35)
+    bang3.rotation.z = -0.28
+
+    headGroup.add(bang1, bang2, bang3)
+
+    // Smooth rounded back hair that neatly wraps the head without protruding blocks
+    const backHairGeo = new THREE.CylinderGeometry(0.41, 0.42, 0.36, 18, 1, false, Math.PI * 0.5, Math.PI)
+    const backHair = new THREE.Mesh(backHairGeo, hairMat)
+    backHair.position.set(0, 0.10, 0)
     headGroup.add(backHair)
+
   }
 
   else if (type === 'cyber_visor_headphones') {
@@ -346,7 +367,7 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   const torsoMat = new THREE.MeshLambertMaterial({ color: prof.torsoColor })
   const trouserMat = new THREE.MeshLambertMaterial({ color: prof.trouserColor })
   const shoeMat = new THREE.MeshLambertMaterial({ color: SHOE_COLOR })
-  const beltMat = new THREE.MeshLambertMaterial({ color: 0x1f242d })
+  const beltMat = new THREE.MeshLambertMaterial({ color: prof.beltColor || 0x3d2414 })
   const buckleMat = new THREE.MeshLambertMaterial({ color: prof.accentColor })
   const strapMat = new THREE.MeshLambertMaterial({ color: 0x181a1f })
 
@@ -364,20 +385,21 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   chest.receiveShadow = true
   torsoGroup.add(chest)
 
-  // Waist & Belt
+  // Waist
   const waistGeo = new THREE.BoxGeometry(0.72, 0.22, 0.36)
   const waist = new THREE.Mesh(waistGeo, trouserMat)
   waist.position.y = 0.70
   waist.castShadow = true
   torsoGroup.add(waist)
 
-  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.08, 0.38), beltMat)
-  belt.position.y = 0.74
+  // Belt - clearly pronounced and distinct from pants
+  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.10, 0.39), beltMat)
+  belt.position.y = 0.73
   torsoGroup.add(belt)
 
   // Belt Buckle on FRONT (+Z)
-  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.10, 0.40), buckleMat)
-  buckle.position.set(0, 0.74, 0.01)
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.13, 0.41), buckleMat)
+  buckle.position.set(0, 0.73, 0.01)
   torsoGroup.add(buckle)
 
   // Backpack on BACK (-Z) with straps on FRONT (+Z) (Attachment 3 inspiration)
@@ -408,6 +430,12 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
     chain.position.set(0, 1.40, 0.21)
     chain.rotation.x = Math.PI / 1.4
     torsoGroup.add(chain)
+  } else if (prof.name === 'Wayfarer') {
+    // Subtle central zipper line on leather jacket
+    const zipperMat = new THREE.MeshLambertMaterial({ color: 0x1f242d })
+    const zipper = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.65, 0.41), zipperMat)
+    zipper.position.set(0, 1.15 + (torsoHeight - 1.0) * 0.4, 0.005)
+    torsoGroup.add(zipper)
   }
 
   characterGroup.add(torsoGroup)
