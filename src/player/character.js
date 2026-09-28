@@ -265,7 +265,7 @@ function addCreativeCovering(headGroup, prof) {
 /**
  * Creates the classic Roblox C-clamp shaped hand (Attachment 1 & 2)
  */
-function createRobloxCHand(skinMat) {
+function createRobloxCHand(skinMat, side = 'left') {
   const handGroup = new THREE.Group()
   handGroup.name = 'RobloxCHand'
 
@@ -279,7 +279,7 @@ function createRobloxCHand(skinMat) {
   const clampGeo = new THREE.TorusGeometry(0.11, 0.05, 8, 16, Math.PI * 1.5)
   const clamp = new THREE.Mesh(clampGeo, skinMat)
   clamp.rotation.x = Math.PI / 2
-  clamp.rotation.z = Math.PI / 4 // C-opening faces forward and inward
+  clamp.rotation.z = side === 'left' ? Math.PI / 4 : -Math.PI / 4
   clamp.position.y = -0.10
   clamp.castShadow = true
   handGroup.add(clamp)
@@ -398,8 +398,8 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   torsoGroup.add(belt)
 
   // Belt Buckle on FRONT (+Z)
-  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.13, 0.41), buckleMat)
-  buckle.position.set(0, 0.73, 0.01)
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.13, 0.04), buckleMat)
+  buckle.position.set(0, 0.73, 0.20)
   torsoGroup.add(buckle)
 
   // Backpack on BACK (-Z) with straps on FRONT (+Z) (Attachment 3 inspiration)
@@ -410,9 +410,9 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   torsoGroup.add(backpack)
 
   // Front shoulder straps (clearly indicates FRONT of torso)
-  const leftStrap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.65, 0.42), strapMat)
+  const leftStrap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.65, 0.40), strapMat)
   leftStrap.position.set(-0.25, 1.15 + (torsoHeight - 1.0) * 0.4, 0.01)
-  const rightStrap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.65, 0.42), strapMat)
+  const rightStrap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.65, 0.40), strapMat)
   rightStrap.position.set(0.25, 1.15 + (torsoHeight - 1.0) * 0.4, 0.01)
   torsoGroup.add(leftStrap, rightStrap)
 
@@ -468,7 +468,7 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   leftArmMesh.castShadow = true
   leftArmGroup.add(leftArmMesh)
 
-  const leftHand = createRobloxCHand(skinMat)
+  const leftHand = createRobloxCHand(skinMat, 'left')
   leftHand.position.set(0, -armHeight, 0)
   leftHand.rotation.y = Math.PI / 6
   leftArmGroup.add(leftHand)
@@ -485,7 +485,7 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   rightArmMesh.castShadow = true
   rightArmGroup.add(rightArmMesh)
 
-  const rightHand = createRobloxCHand(skinMat)
+  const rightHand = createRobloxCHand(skinMat, 'right')
   rightHand.position.set(0, -armHeight, 0)
   rightHand.rotation.y = -Math.PI / 6
   rightArmGroup.add(rightHand)
