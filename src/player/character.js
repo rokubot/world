@@ -418,11 +418,18 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
 
   // Profession details on chest
   if (prof.hasApron) {
-    // Artificer high-vis apron
-    const apronMat = new THREE.MeshLambertMaterial({ color: 0xff6600 })
-    const apron = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.68, 0.43), apronMat)
-    apron.position.set(0, 1.05, 0)
-    torsoGroup.add(apron)
+    // Artificer high-vis apron — stays above belt (belt top = ~0.785, apron bottom must be > 0.785)
+    // apron height 0.48, center at y=1.07 → bottom edge = 1.07 - 0.24 = 0.83 ✓
+    const apronMat = new THREE.MeshLambertMaterial({ color: 0xe85d04 }) // vivid orange
+    const apronBody = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.48, 0.43), apronMat)
+    apronBody.position.set(0, 1.08, 0)
+    torsoGroup.add(apronBody)
+
+    // Apron bib pocket (darker tone)
+    const pocketMat = new THREE.MeshLambertMaterial({ color: 0xc2440a })
+    const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.14, 0.44), pocketMat)
+    pocket.position.set(0, 0.96, 0)
+    torsoGroup.add(pocket)
   } else if (prof.accessoryType === 'designer_shades_chain') {
     // Tycoon gold chain necklace on front chest
     const chainMat = new THREE.MeshLambertMaterial({ color: 0xe5c07b })
