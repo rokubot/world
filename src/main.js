@@ -216,11 +216,6 @@ function animate() {
     animationState = controls.getAnimationState()
   }
 
-  // Billboard effect: name tag always faces camera (Step 3 requirement)
-  if (player && player.nameTag) {
-    player.nameTag.quaternion.copy(camera.quaternion)
-  }
-
   if (player) {
     const elapsed = (performance.now() - animationStart) / 1000
     animateCharacter(player, animationState, elapsed)

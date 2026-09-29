@@ -94,7 +94,6 @@ const CHAIN_GEO = new THREE.TorusGeometry(0.22, 0.025, 8, 16, Math.PI)
 const ZIPPER_GEO = new THREE.BoxGeometry(0.04, 0.65, 0.02)
 const ARM_GEO = new THREE.CylinderGeometry(0.17, 0.17 * 0.9, 0.68, 14)
 const LEG_GEO = new THREE.BoxGeometry(0.32, 0.85, 0.34)
-const NAME_TAG_GEO = new THREE.PlaneGeometry(2.0, 0.5)
 
 const SKIN_MATERIAL = new THREE.MeshLambertMaterial({ color: SKIN_COLOR })
 const SHOE_MATERIAL = new THREE.MeshLambertMaterial({ color: SHOE_COLOR })
@@ -401,15 +400,14 @@ export function createNameTag(playerName) {
   ctx.fillText(playerName, 128, 32)
 
   const tex = new THREE.CanvasTexture(canvas)
-  const nameTag = new THREE.Mesh(
-    NAME_TAG_GEO,
-    new THREE.MeshBasicMaterial({
+  const nameTag = new THREE.Sprite(
+    new THREE.SpriteMaterial({
       map: tex,
       transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide
+      depthWrite: false
     })
   )
+  nameTag.scale.set(2.0, 0.5, 1.0)
   nameTag.name = 'NameTag'
   return nameTag
 }
