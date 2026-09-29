@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { createWorldTerrain, projectCoord, testLocations, SCALE } from './world/terrain.js'
 import { createCharacter } from './player/character.js'
+import { animateCharacter } from './player/animation.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -71,6 +72,22 @@ function flyTo(x, y, z, lookX, lookY, lookZ) {
 let player = null
 let currentProfession = 'wayfarer'
 let playerName = 'Tariq (Roku)'
+const keys = new Set()
+const animationStart = performance.now()
+
+window.addEventListener('keydown', event => {
+  keys.add(event.code)
+})
+
+window.addEventListener('keyup', event => {
+  keys.delete(event.code)
+})
+
+function getPlayerAnimationState() {
+  const moving = ['KeyW', 'KeyA', 'KeyS', 'KeyD'].some(code => keys.has(code))
+  if (!moving) return 'idle'
+  return keys.has('ShiftLeft') || keys.has('ShiftRight') ? 'sprint' : 'walk'
+}
 // Spawn position: beside Dubai marker (lng 55.2, lat 25.2) on UAE land
 const spawnCoord = projectCoord(55.2, 25.2, SCALE)
 // Offset by 4 units so player stands freely beside the red box, not inside it
@@ -205,6 +222,11 @@ function animate() {
   // Billboard effect: name tag always faces camera (Step 3 requirement)
   if (player && player.nameTag) {
     player.nameTag.quaternion.copy(camera.quaternion)
+  }
+
+  if (player) {
+    const elapsed = (performance.now() - animationStart) / 1000
+    animateCharacter(player, getPlayerAnimationState(), elapsed)
   }
 
   controls.update()
