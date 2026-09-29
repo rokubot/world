@@ -1,8 +1,9 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { createWorldTerrain, projectCoord, testLocations, SCALE } from './world/terrain.js'
 import { createCharacter } from './player/character.js'
 import { animateCharacter } from './player/animation.js'
+import { createControls } from './player/controls.js'
+import { createCameraController } from './camera/camera.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -28,14 +29,22 @@ const camera = new THREE.PerspectiveCamera(
   0.5,
   5000
 )
+const clock = new THREE.Clock()
 
-// Controls
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true
-controls.dampingFactor = 0.05
-controls.maxPolarAngle = Math.PI / 2 - 0.02 // don't go below ground
-controls.minDistance = 2
-controls.maxDistance = 1800
+const cameraController = createCameraController(camera)
+const controls = createControls(renderer, {
+  onCameraModeChange: mode => {
+    // Keep map panning centered on the current player location.
+    if (mode !== 0 && player) {
+      cameraController.syncToPlayer(player.group)
+    }
+  },
+  onInteract: () => window.dispatchEvent(new Event('roku:interact')),
+  onMap: () => window.dispatchEvent(new Event('roku:toggle-map')),
+  onVehicle: () => window.dispatchEvent(new Event('roku:toggle-vehicle')),
+  onClose: () => window.dispatchEvent(new Event('roku:close-panel')),
+  onChatFocus: () => window.dispatchEvent(new Event('roku:focus-chat'))
+})
 
 // Lighting (Step 1 requirement 8)
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.75)
@@ -59,35 +68,15 @@ const secondaryLight = new THREE.DirectionalLight(0x4466aa, 0.4)
 secondaryLight.position.set(-200, 150, -200)
 scene.add(secondaryLight)
 
-// Smooth camera transition state
-let targetCamPos = null
-let targetLookAt = null
-
 function flyTo(x, y, z, lookX, lookY, lookZ) {
-  targetCamPos = new THREE.Vector3(x, y, z)
-  targetLookAt = new THREE.Vector3(lookX, lookY, lookZ)
+  cameraController.flyTo(x, y, z, lookX, lookY, lookZ)
 }
 
 // Player state (Step 3)
 let player = null
 let currentProfession = 'wayfarer'
 let playerName = 'Tariq (Roku)'
-const keys = new Set()
 const animationStart = performance.now()
-
-window.addEventListener('keydown', event => {
-  keys.add(event.code)
-})
-
-window.addEventListener('keyup', event => {
-  keys.delete(event.code)
-})
-
-function getPlayerAnimationState() {
-  const moving = ['KeyW', 'KeyA', 'KeyS', 'KeyD'].some(code => keys.has(code))
-  if (!moving) return 'idle'
-  return keys.has('ShiftLeft') || keys.has('ShiftRight') ? 'sprint' : 'walk'
-}
 // Spawn position: beside Dubai marker (lng 55.2, lat 25.2) on UAE land
 const spawnCoord = projectCoord(55.2, 25.2, SCALE)
 // Offset by 4 units so player stands freely beside the red box, not inside it
@@ -99,6 +88,7 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
   }
   player = createCharacter(profession, name)
   player.group.position.set(spawnPos.x, spawnPos.y, spawnPos.z)
+  cameraController.syncToPlayer(player.group)
   scene.add(player.group)
   return player
 }
@@ -126,6 +116,11 @@ function setupUI() {
 
       const loc = testLocations.find(l => l.name === locName)
       if (loc) {
+        // Test locations are camera destinations, so leave player-follow mode first.
+        if (controls.getCameraMode() === 0) {
+          controls.setCameraMode(1)
+        }
+
         const { x, z } = projectCoord(loc.lng, loc.lat, SCALE)
         flyTo(x + 15, 20, z + 20, x, 1.5, z)
       }
@@ -183,8 +178,7 @@ async function init() {
 
     // Position camera near player initially for immediate visibility
     camera.position.set(spawnPos.x + 3.5, spawnPos.y + 2.5, spawnPos.z + 4.5)
-    controls.target.set(spawnPos.x, spawnPos.y + 1.2, spawnPos.z)
-    controls.update()
+    cameraController.syncToPlayer(player.group)
 
     hudStats.textContent = `✓ ${terrainData.totalCountries} countries extruded • Player: ${currentProfession} • Dubai`
 
@@ -208,15 +202,18 @@ async function init() {
 function animate() {
   requestAnimationFrame(animate)
 
-  // Smooth camera interpolation if flying to target
-  if (targetCamPos && targetLookAt) {
-    camera.position.lerp(targetCamPos, 0.06)
-    controls.target.lerp(targetLookAt, 0.06)
-
-    if (camera.position.distanceTo(targetCamPos) < 0.2) {
-      targetCamPos = null
-      targetLookAt = null
-    }
+  const dt = Math.min(clock.getDelta(), 0.1)
+  let animationState = 'idle'
+  if (player) {
+    controls.updateMovement(dt, player.group)
+    cameraController.update(
+      player.group,
+      controls.getYaw(),
+      controls.getPitch(),
+      controls.getCameraMode(),
+      controls.getMove()
+    )
+    animationState = controls.getAnimationState()
   }
 
   // Billboard effect: name tag always faces camera (Step 3 requirement)
@@ -226,10 +223,9 @@ function animate() {
 
   if (player) {
     const elapsed = (performance.now() - animationStart) / 1000
-    animateCharacter(player, getPlayerAnimationState(), elapsed)
+    animateCharacter(player, animationState, elapsed)
   }
 
-  controls.update()
   renderer.render(scene, camera)
 }
 
