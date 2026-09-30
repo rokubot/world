@@ -169,8 +169,9 @@ export function animateCharacter(parts, state, t) { ... }
   ├── main.js                   ✅  Scene init, renderer, controls/camera integration, init(), animate()
   │   ├── controls.js           ✅  WASD, sprint, pointer lock, and action key bindings
   │   └── camera.js             ✅  Third-person / top-down / isometric (C key)
-### Step 5 — Controls & Camera ✅ DONE
-**Files:** `src/player/controls.js` · `src/camera/camera.js` · `src/main.js`
+
+
+### Step 6: Vehicle
 **File to create:** `src/vehicles/vehicle.js`
 
 - Press `F` near spawn point → enter/exit

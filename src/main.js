@@ -4,6 +4,7 @@ import { createCharacter } from './player/character.js'
 import { animateCharacter } from './player/animation.js'
 import { createControls } from './player/controls.js'
 import { createCameraController } from './camera/camera.js'
+import { createVehicleSystem } from './vehicles/vehicle.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -88,6 +89,7 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
   }
   player = createCharacter(profession, name)
   player.group.position.set(spawnPos.x, spawnPos.y, spawnPos.z)
+  vehicleSystem?.setCharacter(player)
   cameraController.syncToPlayer(player.group)
   scene.add(player.group)
   return player
@@ -101,6 +103,7 @@ function focusPlayer() {
 
 // Terrain references for UI toggles
 let terrainRef = null
+let vehicleSystem = null
 
 // Setup navigation & profession buttons
 function setupUI() {
@@ -176,6 +179,20 @@ async function init() {
     // Spawn player character (Step 3)
     spawnPlayer(currentProfession, playerName)
 
+    const dubaiCoord = projectCoord(55.274, 25.197, SCALE)
+    const parisCoord = projectCoord(2.294, 48.858, SCALE)
+    const sydneyCoord = projectCoord(151.215, -33.857, SCALE)
+
+    vehicleSystem = createVehicleSystem(scene, {
+      character: player,
+      spawnPoints: [
+        { x: dubaiCoord.x + 10, y: 0.5, z: dubaiCoord.z + 10, name: 'DubaiCar', color: 0xaa2222 },
+        { x: parisCoord.x + 10, y: 0.5, z: parisCoord.z + 10, name: 'ParisCar', color: 0x2244aa },
+        { x: sydneyCoord.x + 10, y: 0.5, z: sydneyCoord.z + 10, name: 'SydneyCar', color: 0x22aa22 }
+      ]
+    })
+    window.addEventListener('roku:toggle-vehicle', () => vehicleSystem.toggleVehicle())
+
     // Position camera near player initially for immediate visibility
     camera.position.set(spawnPos.x + 3.5, spawnPos.y + 2.5, spawnPos.z + 4.5)
     cameraController.syncToPlayer(player.group)
@@ -205,7 +222,11 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.1)
   let animationState = 'idle'
   if (player) {
-    controls.updateMovement(dt, player.group)
+    if (vehicleSystem?.isDriving()) {
+      vehicleSystem.update(dt, controls.getYaw())
+    } else {
+      controls.updateMovement(dt, player.group)
+    }
     cameraController.update(
       player.group,
       controls.getYaw(),
