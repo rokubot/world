@@ -5,6 +5,9 @@ import { animateCharacter } from './player/animation.js'
 import { createControls } from './player/controls.js'
 import { createCameraController } from './camera/camera.js'
 import { createVehicleSystem } from './vehicles/vehicle.js'
+import { CONFIG } from './config.js'
+import { PALETTE } from './palette.js'
+import { getToonMaterial } from './materials.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -18,10 +21,38 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-// Scene
+// Scene & Anime Atmosphere (Step 7.5)
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x090d16)
-scene.fog = new THREE.FogExp2(0x090d16, 0.0008)
+scene.background = new THREE.Color(PALETTE.atmosphere.skyHorizon)
+scene.fog = new THREE.Fog(PALETTE.atmosphere.fog, 200, 1400)
+
+// Gradient Sky Dome (Step 7.5)
+function createSkyDome() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 32
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  const grad = ctx.createLinearGradient(0, 0, 0, 256)
+  grad.addColorStop(0, '#38bdf8') // top deep blue
+  grad.addColorStop(0.55, '#a5f3fc') // mid soft sky
+  grad.addColorStop(1.0, '#bae6fd') // pale horizon
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, 32, 256)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  const skyGeo = new THREE.SphereGeometry(1800, 32, 16)
+  const skyMat = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.BackSide,
+    depthWrite: false
+  })
+  const skyMesh = new THREE.Mesh(skyGeo, skyMat)
+  skyMesh.name = 'SkyDome'
+  skyMesh.userData.skipOutline = true
+  return skyMesh
+}
+const skyDome = createSkyDome()
+scene.add(skyDome)
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
@@ -47,11 +78,8 @@ const controls = createControls(renderer, {
   onChatFocus: () => window.dispatchEvent(new Event('roku:focus-chat'))
 })
 
-// Lighting (Step 1 requirement 8)
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.75)
-scene.add(ambientLight)
-
-const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.3)
+// Stylized Lighting (Step 7.5: 1 Directional soft warm + 1 Hemisphere light)
+const sunLight = new THREE.DirectionalLight(PALETTE.atmosphere.sunLight, 1.25)
 sunLight.position.set(250, 400, 200)
 sunLight.castShadow = true
 sunLight.shadow.mapSize.width = 2048
@@ -65,23 +93,82 @@ sunLight.shadow.camera.top = d
 sunLight.shadow.camera.bottom = -d
 scene.add(sunLight)
 
-const secondaryLight = new THREE.DirectionalLight(0x4466aa, 0.4)
-secondaryLight.position.set(-200, 150, -200)
-scene.add(secondaryLight)
+const hemiLight = new THREE.HemisphereLight(
+  PALETTE.atmosphere.hemiSky,
+  PALETTE.atmosphere.hemiGround,
+  0.65
+)
+scene.add(hemiLight)
+
+// Stylized Low-Poly Clouds (Step 7.5)
+function createStylizedClouds(scene) {
+  const cloudGroup = new THREE.Group()
+  cloudGroup.name = 'StylizedClouds'
+  const cloudGeo = new THREE.DodecahedronGeometry(7, 0)
+  const cloudMat = getToonMaterial(PALETTE.atmosphere.cloud, {
+    transparent: true,
+    opacity: 0.92
+  })
+
+  const clouds = []
+  for (let i = 0; i < 22; i++) {
+    const cluster = new THREE.Group()
+    const partsCount = 3 + Math.floor(Math.random() * 3)
+    for (let p = 0; p < partsCount; p++) {
+      const part = new THREE.Mesh(cloudGeo, cloudMat)
+      part.scale.set(
+        1.6 + Math.random() * 1.4,
+        0.5 + Math.random() * 0.4,
+        1.3 + Math.random() * 1.2
+      )
+      part.position.set(
+        (p - partsCount / 2) * 7 + (Math.random() - 0.5) * 3,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 5
+      )
+      part.castShadow = false
+      part.receiveShadow = false
+      cluster.add(part)
+    }
+    cluster.position.set(
+      (Math.random() - 0.5) * 900,
+      130 + Math.random() * 60,
+      (Math.random() - 0.5) * 700
+    )
+    cluster.userData.driftSpeed = 1.8 + Math.random() * 2.2
+    cloudGroup.add(cluster)
+    clouds.push(cluster)
+  }
+  scene.add(cloudGroup)
+  return {
+    group: cloudGroup,
+    update(dt) {
+      clouds.forEach(c => {
+        c.position.x += c.userData.driftSpeed * dt
+        if (c.position.x > 500) c.position.x = -500
+      })
+    }
+  }
+}
+let cloudSystem = null
 
 function flyTo(x, y, z, lookX, lookY, lookZ) {
   cameraController.flyTo(x, y, z, lookX, lookY, lookZ)
 }
 
-// Player state (Step 3)
+// Player state (Step 3 & 7)
 let player = null
 let currentProfession = 'wayfarer'
 let playerName = 'Tariq (Roku)'
 const animationStart = performance.now()
-// Spawn position: beside Dubai marker (lng 55.2, lat 25.2) on UAE land
-const spawnCoord = projectCoord(55.2, 25.2, SCALE)
-// Offset by 4 units so player stands freely beside the red box, not inside it
-const spawnPos = { x: spawnCoord.x + 4.0, y: 0.5, z: spawnCoord.z + 4.0 }
+
+// Spawn position from CONFIG
+const spawnCoord = projectCoord(CONFIG.player.spawnCoord.lng, CONFIG.player.spawnCoord.lat, SCALE)
+const spawnPos = {
+  x: spawnCoord.x + CONFIG.player.spawnOffset.x,
+  y: CONFIG.player.spawnOffset.y,
+  z: spawnCoord.z + CONFIG.player.spawnOffset.z
+}
 
 function spawnPlayer(profession = currentProfession, name = playerName) {
   if (player && player.group) {
@@ -119,11 +206,9 @@ function setupUI() {
 
       const loc = testLocations.find(l => l.name === locName)
       if (loc) {
-        // Test locations are camera destinations, so leave player-follow mode first.
         if (controls.getCameraMode() === 0) {
           controls.setCameraMode(1)
         }
-
         const { x, z } = projectCoord(loc.lng, loc.lat, SCALE)
         flyTo(x + 15, 20, z + 20, x, 1.5, z)
       }
@@ -176,19 +261,33 @@ async function init() {
     const terrainData = await createWorldTerrain(scene, '/assets/world.geojson')
     terrainRef = terrainData
 
-    // Spawn player character (Step 3)
+    // Spawn player character (Step 3 & 7)
     spawnPlayer(currentProfession, playerName)
+
+    // Setup anime clouds
+    cloudSystem = createStylizedClouds(scene)
 
     const dubaiCoord = projectCoord(55.274, 25.197, SCALE)
     const parisCoord = projectCoord(2.294, 48.858, SCALE)
     const sydneyCoord = projectCoord(151.215, -33.857, SCALE)
 
+    // Paved road ribbon passing through Dubai vehicle spawn area
+    const roadGeo = new THREE.PlaneGeometry(6, 120)
+    roadGeo.rotateX(-Math.PI / 2)
+    const roadMat = getToonMaterial(PALETTE.biome.road)
+    const dubaiRoad = new THREE.Mesh(roadGeo, roadMat)
+    dubaiRoad.position.set(dubaiCoord.x + 10, 0.52, dubaiCoord.z + 10)
+    dubaiRoad.receiveShadow = true
+    dubaiRoad.userData.skipOutline = true
+    scene.add(dubaiRoad)
+
     vehicleSystem = createVehicleSystem(scene, {
       character: player,
+      roadMeshes: [dubaiRoad],
       spawnPoints: [
-        { x: dubaiCoord.x + 10, y: 0.5, z: dubaiCoord.z + 10, name: 'DubaiCar', color: 0xaa2222 },
-        { x: parisCoord.x + 10, y: 0.5, z: parisCoord.z + 10, name: 'ParisCar', color: 0x2244aa },
-        { x: sydneyCoord.x + 10, y: 0.5, z: sydneyCoord.z + 10, name: 'SydneyCar', color: 0x22aa22 }
+        { x: dubaiCoord.x + 10, y: 0.5, z: dubaiCoord.z + 10, name: 'DubaiCar', color: PALETTE.red.base },
+        { x: parisCoord.x + 10, y: 0.5, z: parisCoord.z + 10, name: 'ParisCar', color: PALETTE.blue.base },
+        { x: sydneyCoord.x + 10, y: 0.5, z: sydneyCoord.z + 10, name: 'SydneyCar', color: PALETTE.green.base }
       ]
     })
     window.addEventListener('roku:toggle-vehicle', () => vehicleSystem.toggleVehicle())
@@ -241,6 +340,8 @@ function animate() {
     const elapsed = (performance.now() - animationStart) / 1000
     animateCharacter(player, animationState, elapsed)
   }
+
+  cloudSystem?.update(dt)
 
   renderer.render(scene, camera)
 }

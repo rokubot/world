@@ -1,10 +1,5 @@
 import * as THREE from 'three'
-
-const CAMERA_LERP = 0.12
-const THIRD_PERSON_DISTANCE = 10
-const THIRD_PERSON_HEIGHT = 5
-const TOP_DOWN_HEIGHT = 80
-const ISOMETRIC_DISTANCE = 60
+import { CONFIG } from '../config.js'
 
 export function createCameraController(camera) {
   const target = new THREE.Vector3()
@@ -24,12 +19,12 @@ export function createCameraController(camera) {
 
       if (cameraMode === 0) {
         target.set(
-          playerGroup.position.x + Math.sin(yaw) * THIRD_PERSON_DISTANCE,
-          playerGroup.position.y + THIRD_PERSON_HEIGHT + Math.sin(pitch) * THIRD_PERSON_DISTANCE,
-          playerGroup.position.z + Math.cos(yaw) * THIRD_PERSON_DISTANCE
+          playerGroup.position.x + Math.sin(yaw) * CONFIG.camera.thirdPersonDistance,
+          playerGroup.position.y + CONFIG.camera.thirdPersonHeight + Math.sin(pitch) * CONFIG.camera.thirdPersonDistance,
+          playerGroup.position.z + Math.cos(yaw) * CONFIG.camera.thirdPersonDistance
         )
         lookAt.set(playerGroup.position.x, playerGroup.position.y + 1.5, playerGroup.position.z)
-        camera.position.lerp(target, CAMERA_LERP)
+        camera.position.lerp(target, CONFIG.camera.lerp)
         camera.lookAt(lookAt)
         return
       }
@@ -37,9 +32,9 @@ export function createCameraController(camera) {
       panX += movement.x
       panZ += movement.z
       if (cameraMode === 1) {
-        camera.position.set(panX, TOP_DOWN_HEIGHT, panZ)
+        camera.position.set(panX, CONFIG.camera.topDownHeight, panZ)
       } else {
-        camera.position.set(panX + ISOMETRIC_DISTANCE, ISOMETRIC_DISTANCE, panZ + ISOMETRIC_DISTANCE)
+        camera.position.set(panX + CONFIG.camera.isometricDistance, CONFIG.camera.isometricDistance, panZ + CONFIG.camera.isometricDistance)
       }
       camera.lookAt(panX, 0, panZ)
     },
