@@ -8,7 +8,7 @@ Companion to `roku_world_specification.md` (the spec is the source of truth for 
 1. Do one step at a time. Do not start the next step until the "Done when" check passes.
 2. Do not build features from later steps early.
 3. Keep every tunable number (speeds, damage, XP, drop rates, timers) in one config file per side (`src/config.js`, `config.py`), never inline.
-4. Every character and creature is faceless: no eyes, mouth, nose, visors, sunglasses or slits.
+4. Characters have solid, featureless heads. Optional eyewear may be added only as separate meshes on top of the head; never create eyes, pupils, eyelids, nose or mouth.
 5. Do not touch the bot's aiohttp server on port 5300. The world backend is its own service on port 8991.
 
 ---
@@ -24,11 +24,14 @@ Companion to `roku_world_specification.md` (the spec is the source of truth for 
 - Helper `latLngToWorld(lat, lng)` using the projection above. Use it for every placement.
 **Done when:** A test marker lands on the correct country.
 
-## Step 3: Character (DONE, needs faceless fix)
-**Goal:** Blocky humanoid with hair, clothes and shoes, no face.
-- **Fix needed (still visible in the latest screenshot: sunglasses/visor on the head):** remove sunglasses, visor and slit geometry from `character.js`. Head is a solid, featureless shape. Hair, hats and headwear are fine if they do not draw a face.
+## Step 3: Character
+**Goal:** Blocky humanoid with hair, clothes and shoes, with optional eyewear and no facial features.
+- Keep the head a solid, featureless shape. Never create eyes, pupils, eyelids, nose or mouth, including behind eyewear.
+- Sunglasses, gold aviator glasses, amber visors and goggles may be attached as separate meshes on top of the head. Lenses must be solid or tinted surfaces that do not reveal eye shapes.
+- Configure eyewear enabled/disabled and its style per character in `src/config.js`. Keep all eyewear colours in `src/palette.js` and all eyewear sizes in `src/config.js`.
+- Keep eyewear attached to the head so it follows idle and walk animations.
 - Keep silhouettes distinct (male, female, child variants if present).
-**Done when:** Looking from every angle, no facial feature is visible.
+**Done when:** Characters can optionally wear the allowed eyewear, it stays attached during animation, and no facial feature is visible from any camera angle.
 
 ## Step 4: Animation (DONE)
 **Goal:** Idle, walk, sprint.
@@ -76,7 +79,7 @@ Note: anime normally relies on expressive faces. Because every character is face
 - Slightly stylised proportions: larger head, simple body, clear silhouette.
 - Hair is the main personality: layered chunky shapes (spiky, bob, long, ponytail), each a separate toon-shaded mesh, with a slightly lighter highlight shape.
 - Clothes: bold colour blocks with contrasting trim.
-- Head stays a solid colour. Never add eyes, mouths, visors or slits.
+- Head stays a solid, featureless shape. Never add eyes, pupils, eyelids, nose, mouth or slits. Optional eyewear is separate from the head and follows the Step 3 rules.
 
 ### 7.5 Lighting and atmosphere
 - One directional light (soft warm), one hemisphere light. No shadows on mobile.

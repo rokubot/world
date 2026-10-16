@@ -174,7 +174,7 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
   if (player && player.group) {
     scene.remove(player.group)
   }
-  player = createCharacter(profession, name)
+  player = createCharacter(profession, name, CONFIG.characters.player)
   player.group.position.set(spawnPos.x, spawnPos.y, spawnPos.z)
   vehicleSystem?.setCharacter(player)
   cameraController.syncToPlayer(player.group)

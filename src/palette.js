@@ -70,6 +70,17 @@ export const PALETTE = Object.freeze({
     shadow: 0x141a29
   },
 
+  eyewear: {
+    sunglassesFrame: 0x80632d,
+    sunglassesLens: 0x141d2b,
+    aviatorFrame: 0xd6a521,
+    aviatorLens: 0x536b71,
+    visor: 0xc77828,
+    gogglesFrame: 0x334155,
+    gogglesLens: 0x496a79,
+    strap: 0x202a38
+  },
+
   white: {
     base: 0xf8fafc,
     light: 0xffffff,

@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { PALETTE } from '../palette.js'
+import { CONFIG } from '../config.js'
 import { getToonMaterial, applyOutlinesToGroup } from '../materials.js'
 
 /**
@@ -90,9 +91,140 @@ const ZIPPER_GEO = new THREE.BoxGeometry(0.04, 0.65, 0.02)
 const ARM_GEO = new THREE.CylinderGeometry(0.17, 0.17 * 0.9, 0.68, 14)
 const LEG_GEO = new THREE.BoxGeometry(0.32, 0.85, 0.34)
 
+function createEyewear(headGroup, eyewearConfig) {
+  if (!eyewearConfig?.enabled) return
+
+  const style = eyewearConfig.type
+  const size = CONFIG.eyewear.sizes[style]
+  if (!size) {
+    throw new Error(`Unsupported eyewear type "${style}".`)
+  }
+
+  const eyewear = new THREE.Group()
+  eyewear.name = `Eyewear_${style}`
+
+  const addMesh = (geometry, color, x, y, z) => {
+    const mesh = new THREE.Mesh(geometry, getToonMaterial(color))
+    mesh.position.set(x, y, z)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    eyewear.add(mesh)
+  }
+
+  if (style === 'sunglasses') {
+    const frameColor = PALETTE.eyewear.sunglassesFrame
+    const lensColor = PALETTE.eyewear.sunglassesLens
+    const lensGeometry = new THREE.BoxGeometry(size.lensWidth, size.lensHeight, size.lensDepth)
+    const frameGeometry = new THREE.BoxGeometry(size.lensWidth, size.frameWidth, size.frameDepth)
+    const bridgeGeometry = new THREE.BoxGeometry(size.bridgeWidth, size.frameWidth, size.frameDepth)
+    const templeGeometry = new THREE.BoxGeometry(
+      size.templeWidth,
+      size.templeHeight,
+      size.templeLength
+    )
+
+    for (const side of [-1, 1]) {
+      addMesh(lensGeometry, lensColor, side * size.lensSpacing / 2, size.lensY, size.frontZ)
+      addMesh(
+        frameGeometry,
+        frameColor,
+        side * size.lensSpacing / 2,
+        size.lensY + size.lensHeight / 2,
+        size.frontZ
+      )
+      addMesh(
+        templeGeometry,
+        frameColor,
+        side * (size.lensSpacing / 2 + size.lensWidth / 2),
+        size.lensY,
+        size.frontZ - size.templeLength / 2
+      )
+    }
+    addMesh(bridgeGeometry, frameColor, 0, size.lensY, size.frontZ)
+  } else if (style === 'goldAviators') {
+    const frameColor = PALETTE.eyewear.aviatorFrame
+    const lensColor = PALETTE.eyewear.aviatorLens
+    const lensGeometry = new THREE.CircleGeometry(size.lensRadius, size.segments)
+    const frameGeometry = new THREE.TorusGeometry(
+      size.frameRadius,
+      size.frameTubeRadius,
+      size.frameRadialSegments,
+      size.segments
+    )
+    const bridgeGeometry = new THREE.BoxGeometry(
+      size.bridgeWidth,
+      size.bridgeHeight,
+      size.bridgeDepth
+    )
+    const templeGeometry = new THREE.BoxGeometry(
+      size.templeWidth,
+      size.templeHeight,
+      size.templeLength
+    )
+
+    for (const side of [-1, 1]) {
+      const x = side * size.lensSpacing
+      const lens = new THREE.Mesh(lensGeometry, getToonMaterial(lensColor))
+      lens.scale.y = size.lensHeightScale
+      lens.position.set(x, size.lensY, size.frontZ)
+      lens.castShadow = true
+      eyewear.add(lens)
+
+      const frame = new THREE.Mesh(frameGeometry, getToonMaterial(frameColor))
+      frame.scale.y = size.lensHeightScale
+      frame.position.set(x, size.lensY, size.frontZ)
+      frame.castShadow = true
+      eyewear.add(frame)
+
+      addMesh(
+        templeGeometry,
+        frameColor,
+        side * (size.lensSpacing + size.frameRadius),
+        size.lensY,
+        size.frontZ - size.templeLength / 2
+      )
+    }
+    addMesh(bridgeGeometry, frameColor, 0, size.lensY + size.bridgeYOffset, size.frontZ)
+  } else if (style === 'amberVisor') {
+    const visorColor = PALETTE.eyewear.visor
+    const visor = new THREE.BoxGeometry(size.width, size.height, size.depth)
+    const sidePiece = new THREE.BoxGeometry(size.sideWidth, size.sideHeight, size.sideDepth)
+    addMesh(visor, visorColor, 0, size.y, size.frontZ)
+    for (const side of [-1, 1]) {
+      addMesh(sidePiece, visorColor, side * size.width / 2, size.y, size.frontZ - size.sideDepth / 2)
+    }
+  } else if (style === 'goggles') {
+    const frameColor = PALETTE.eyewear.gogglesFrame
+    const lensColor = PALETTE.eyewear.gogglesLens
+    const lensGeometry = new THREE.CircleGeometry(size.lensRadius, size.segments)
+    const frameGeometry = new THREE.TorusGeometry(
+      size.frameRadius,
+      size.frameTubeRadius,
+      size.frameRadialSegments,
+      size.segments
+    )
+    const bridgeGeometry = new THREE.BoxGeometry(
+      size.bridgeWidth,
+      size.bridgeHeight,
+      size.bridgeDepth
+    )
+    const strapGeometry = new THREE.BoxGeometry(size.strapLength, size.strapHeight, size.strapDepth)
+
+    addMesh(strapGeometry, PALETTE.eyewear.strap, 0, size.lensY, size.frontZ - size.strapDepth)
+    for (const side of [-1, 1]) {
+      const x = side * size.lensSpacing
+      addMesh(lensGeometry, lensColor, x, size.lensY, size.frontZ)
+      addMesh(frameGeometry, frameColor, x, size.lensY, size.frontZ)
+    }
+    addMesh(bridgeGeometry, frameColor, 0, size.lensY, size.frontZ)
+  }
+
+  headGroup.add(eyewear)
+}
+
 /**
  * Creates the rounded Roblox head geometry.
- * Solid, completely featureless shape (no eyes, mouth, nose, visors, slits).
+ * Solid, completely featureless shape with no eyes, nose, or mouth.
  */
 function createRobloxHead(skinMat) {
   const headGroup = new THREE.Group()
@@ -129,7 +261,6 @@ function createRobloxHead(skinMat) {
 
 /**
  * Adds hairstyle and head accessories with chunky toon shapes and highlight layers.
- * Completely faceless (no eyes, mouth, nose, visors, slits).
  */
 function addCreativeCovering(headGroup, prof) {
   const type = prof.accessoryType
@@ -318,9 +449,13 @@ function createNameTag(playerName = 'Player') {
 
 /**
  * Builds a blocky Roblox-style humanoid character with toon shading,
- * palette integration, clean outlines, and strictly faceless design.
+ * palette integration, clean outlines, and an optional faceless design.
  */
-export function createCharacter(professionKey = 'wayfarer', playerName = 'Player') {
+export function createCharacter(
+  professionKey = 'wayfarer',
+  playerName = 'Player',
+  characterConfig = CONFIG.characters.npcDefault
+) {
   const prof = PROFESSIONS[professionKey.toLowerCase()] || PROFESSIONS.wayfarer
   const characterGroup = new THREE.Group()
   characterGroup.name = `Character_${playerName}`
@@ -411,6 +546,7 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   const headGroup = createRobloxHead(skinMat)
   headGroup.position.y = 1.95 + (torsoHeight - 1.0)
   addCreativeCovering(headGroup, prof)
+  createEyewear(headGroup, characterConfig?.eyewear)
   visualGroup.add(headGroup)
 
   // ─── 3. ARMS WITH C-HANDS & SHOULDER PIVOTS ───────────────────────────────

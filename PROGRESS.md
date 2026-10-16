@@ -11,7 +11,7 @@
 - **Backend:** Python `aiohttp` on port **8991** with raw WebSocket (`/ws`, JSON messages).
 - **No Socket.io:** Pure raw WebSocket only (no `socket.io-client`, no `python-socketio`, no `sio.emit`).
 - **Tunable Configs:** Every tunable number (speeds, damage, XP, drop rates, timers) lives in [`src/config.js`](./src/config.js) / `config.py`, never inline.
-- **Strict Faceless Rule:** Every character and creature is completely faceless (no eyes, mouth, nose, visors, sunglasses, or slits).
+- **Featureless Head Rule:** Characters have solid heads with no eyes, pupils, eyelids, nose or mouth. Optional eyewear is separate from the head, opaque/tinted, and never reveals eye shapes.
 
 ---
 
@@ -21,7 +21,7 @@
 |---|---|---|---|
 | **Step 1** | Terrain | ✅ DONE | Natural Earth 1:50m extruded geometry with ocean plane. |
 | **Step 2** | Coordinate Markers | ✅ DONE | Real lat/lng projection validation boxes (Dubai, Paris, Sydney, NY, Tokyo). |
-| **Step 3** | Character (Faceless) | ✅ DONE | All sunglasses, visors, and slits removed. Solid featureless head with distinct silhouettes. |
+| **Step 3** | Character & Optional Eyewear | ✅ DONE | Solid featureless heads; optional config-driven sunglasses, gold aviators, amber visors or goggles. |
 | **Step 4** | Animation | ✅ DONE | Procedural limb swing blending idle, walk, and sprint. |
 | **Step 5** | Controls & Camera | ✅ DONE | WASD + shift sprint, mouse look, C key camera mode cycling. |
 | **Step 6** | Car (Drivable Vehicle) | ✅ DONE | F to enter/exit, car speed 60, off-road 0.4x penalty on terrain, spinning wheels. |
@@ -54,7 +54,9 @@
 
 ### Step 3 — Faceless Character System ✅ DONE
 **File:** [`src/player/character.js`](./src/player/character.js)
-- Fully compliant with faceless requirement: no eyes, mouth, nose, visors, sunglasses, or slits.
+- Solid featureless head with no eyes, pupils, eyelids, nose or mouth.
+- Optional separate eyewear meshes: sunglasses, gold aviators, amber visor and goggles; opaque/tinted lenses conceal the featureless head.
+- Eyewear choices are configured per character in [`src/config.js`](./src/config.js), with colours in [`src/palette.js`](./src/palette.js) and sizes in the config.
 - Solid head shape (`CylinderGeometry` + top/bottom dome bevels + neck).
 - Silhouettes maintained across 4 professions:
   - **Wayfarer:** Layered side-swept adventure hair with highlight bangs.
