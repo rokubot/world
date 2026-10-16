@@ -1,76 +1,82 @@
 import * as THREE from 'three'
 import { PALETTE } from '../palette.js'
-import { CONFIG } from '../config.js'
 import { getToonMaterial, applyOutlinesToGroup } from '../materials.js'
 
 /**
- * Profession color & style configurations pulling strictly from PALETTE (Step 7.1)
+ * Profession color & style configurations as specified
  */
 export const PROFESSIONS = {
   wayfarer: {
     name: 'Wayfarer',
-    torsoColor: PALETTE.professions.wayfarer.jacket,
-    trouserColor: PALETTE.professions.wayfarer.trouser,
-    hairColor: PALETTE.professions.wayfarer.hair,
-    hairHighlight: PALETTE.professions.wayfarer.hairHighlight,
-    accessoryType: 'adventurer_hair',
-    accentColor: PALETTE.professions.wayfarer.accent,
-    beltColor: PALETTE.professions.wayfarer.belt,
+    torsoColor: 0x945a24, // warm leather adventurer jacket
+    trouserColor: 0x24354b, // classic dark indigo denim jeans
+    hairColor: 0x42200a, // rich chestnut brown
+    accessoryType: 'sunglasses_adventurer',
+    accentColor: 0xd4af37, // gold accent
+    beltColor: 0x4a2812, // warm saddle brown leather belt
     torsoHeight: 1.0
   },
   artificer: {
     name: 'Artificer',
-    torsoColor: PALETTE.professions.artificer.jacket,
-    trouserColor: PALETTE.professions.artificer.trouser,
-    hairColor: PALETTE.professions.artificer.hair,
-    hairHighlight: PALETTE.professions.artificer.hairHighlight,
-    headphonesColor: PALETTE.professions.artificer.headphones,
-    accessoryType: 'headphones_hair',
-    accentColor: PALETTE.professions.artificer.accent,
-    beltColor: PALETTE.professions.artificer.belt,
+    torsoColor: 0x3e444c,
+    trouserColor: 0x282f3a, // tactical slate cargo pants
+    hairColor: 0x1a1a1a,
+    accessoryType: 'cyber_visor_headphones',
+    accentColor: 0xff6600,
+    beltColor: 0x14171d, // dark utility belt
     torsoHeight: 1.0,
     hasApron: true
   },
   mystic: {
     name: 'Mystic',
-    torsoColor: PALETTE.professions.mystic.jacket,
-    trouserColor: PALETTE.professions.mystic.trouser,
-    hairColor: PALETTE.professions.mystic.hair,
-    hairHighlight: PALETTE.professions.mystic.hairHighlight,
-    hoodColor: PALETTE.professions.mystic.hood,
-    hoodTrimColor: PALETTE.professions.mystic.hoodTrim,
-    accessoryType: 'mystic_cowl',
-    accentColor: PALETTE.professions.mystic.accent,
-    beltColor: PALETTE.professions.mystic.belt,
+    torsoColor: 0x4a1a6b,
+    trouserColor: 0x220938,
+    hairColor: 0x6b3a8a,
+    accessoryType: 'mystic_cowl_visor',
+    accentColor: 0xa855f7,
+    beltColor: 0x130621,
     torsoHeight: 1.25
   },
   tycoon: {
     name: 'Tycoon',
-    torsoColor: PALETTE.professions.tycoon.jacket,
-    trouserColor: PALETTE.professions.tycoon.trouser,
-    hairColor: PALETTE.professions.tycoon.hair,
-    hairHighlight: PALETTE.professions.tycoon.hairHighlight,
-    accessoryType: 'styled_hair',
-    accentColor: PALETTE.professions.tycoon.accent,
-    beltColor: PALETTE.professions.tycoon.belt,
+    torsoColor: 0x14203b,
+    trouserColor: 0x0c1424,
+    hairColor: 0x1a1a1a,
+    accessoryType: 'designer_shades_chain',
+    accentColor: 0xe5c07b,
+    beltColor: 0x382212, // luxury leather belt
     torsoHeight: 1.0
   }
 }
+
+const SKIN_COLOR = 0xffcc99
+const SHOE_COLOR = 0x1c1e22
 
 const HEAD_CYLINDER_GEO = new THREE.CylinderGeometry(0.38, 0.40, 0.65, 24)
 const HEAD_TOP_DOME_GEO = new THREE.SphereGeometry(0.38, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2)
 const HEAD_BOTTOM_DOME_GEO = new THREE.SphereGeometry(0.40, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2)
 const NECK_GEO = new THREE.CylinderGeometry(0.18, 0.20, 0.14, 16)
+const SUNGLASSES_LENS_GEO = new THREE.BoxGeometry(0.24, 0.16, 0.08)
+const SUNGLASSES_BRIDGE_GEO = new THREE.BoxGeometry(0.10, 0.04, 0.09)
+const SUNGLASSES_TOP_BAR_GEO = new THREE.BoxGeometry(0.62, 0.04, 0.08)
+const SUNGLASSES_TEMPLE_GEO = new THREE.BoxGeometry(0.12, 0.04, 0.38)
 const HAIR_CROWN_GEO = new THREE.SphereGeometry(0.44, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2)
 const HAIR_BANG_ONE_GEO = new THREE.BoxGeometry(0.24, 0.16, 0.14)
 const HAIR_BANG_TWO_GEO = new THREE.BoxGeometry(0.22, 0.15, 0.14)
 const HAIR_BANG_THREE_GEO = new THREE.BoxGeometry(0.18, 0.13, 0.12)
 const BACK_HAIR_GEO = new THREE.CylinderGeometry(0.41, 0.42, 0.36, 18, 1, false, Math.PI * 0.5, Math.PI)
+const ARTIFICER_VISOR_GEO = new THREE.BoxGeometry(0.64, 0.18, 0.12)
+const ARTIFICER_GLOW_STRIP_GEO = new THREE.BoxGeometry(0.56, 0.05, 0.14)
 const HEADPHONE_PAD_GEO = new THREE.CylinderGeometry(0.16, 0.16, 0.12, 16)
 const HEADPHONE_BAND_GEO = new THREE.TorusGeometry(0.44, 0.04, 8, 20, Math.PI)
 const ARTIFICER_HAIR_GEO = new THREE.BoxGeometry(0.68, 0.18, 0.68)
+const MYSTIC_VISOR_GEO = new THREE.BoxGeometry(0.58, 0.14, 0.10)
+const MYSTIC_RUNE_GEO = new THREE.BoxGeometry(0.38, 0.03, 0.12)
 const MYSTIC_HOOD_GEO = new THREE.SphereGeometry(0.46, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2)
 const MYSTIC_HOOD_RIM_GEO = new THREE.TorusGeometry(0.46, 0.06, 8, 20, Math.PI * 1.2)
+const TYCOON_LENS_GEO = new THREE.BoxGeometry(0.25, 0.16, 0.08)
+const TYCOON_FRAME_GEO = new THREE.BoxGeometry(0.66, 0.20, 0.06)
+const TYCOON_ARMS_GEO = new THREE.BoxGeometry(0.08, 0.04, 0.58)
 const TYCOON_HAIR_MAIN_GEO = new THREE.BoxGeometry(0.78, 0.22, 0.82)
 const TYCOON_HAIR_BACK_GEO = new THREE.BoxGeometry(0.70, 0.35, 0.22)
 const WRIST_GEO = new THREE.CylinderGeometry(0.10, 0.12, 0.10, 12)
@@ -91,140 +97,34 @@ const ZIPPER_GEO = new THREE.BoxGeometry(0.04, 0.65, 0.02)
 const ARM_GEO = new THREE.CylinderGeometry(0.17, 0.17 * 0.9, 0.68, 14)
 const LEG_GEO = new THREE.BoxGeometry(0.32, 0.85, 0.34)
 
-function createEyewear(headGroup, eyewearConfig) {
-  if (!eyewearConfig?.enabled) return
+const SKIN_MATERIAL = getToonMaterial(SKIN_COLOR)
+const SHOE_MATERIAL = getToonMaterial(SHOE_COLOR)
+const STRAP_MATERIAL = getToonMaterial(0x181a1f)
+const GLASSES_MATERIAL = getToonMaterial(0x10141c)
+const GOLD_MATERIAL = getToonMaterial(0xd4af37)
+const BACKPACK_MATERIAL = getToonMaterial(0x1e242c)
+const ARTIFICER_VISOR_MATERIAL = getToonMaterial(0x18202a)
+const ARTIFICER_GLOW_MATERIAL = getToonMaterial(0xff7700, { emissive: 0x883300 })
+const HEADPHONE_MATERIAL = getToonMaterial(0xffa500)
+const HEADPHONE_STRAP_MATERIAL = getToonMaterial(0x111111)
+const MYSTIC_VISOR_MATERIAL = getToonMaterial(0x120824)
+const MYSTIC_RUNE_MATERIAL = getToonMaterial(0xc084fc, { emissive: 0x7e22ce })
+const MYSTIC_HOOD_MATERIAL = getToonMaterial(0x3b0764)
+const MYSTIC_TRIM_MATERIAL = getToonMaterial(0xa855f7)
+const TYCOON_FRAME_MATERIAL = getToonMaterial(0x050505)
+const TYCOON_LENS_MATERIAL = getToonMaterial(0x1e293b)
 
-  const style = eyewearConfig.type
-  const size = CONFIG.eyewear.sizes[style]
-  if (!size) {
-    throw new Error(`Unsupported eyewear type "${style}".`)
+const characterMaterialCache = new Map()
+function getCharacterMaterial(color, emissive = 0) {
+  const key = `${color}:${emissive}`
+  if (!characterMaterialCache.has(key)) {
+    characterMaterialCache.set(key, getToonMaterial(color, { emissive }))
   }
-
-  const eyewear = new THREE.Group()
-  eyewear.name = `Eyewear_${style}`
-
-  const addMesh = (geometry, color, x, y, z) => {
-    const mesh = new THREE.Mesh(geometry, getToonMaterial(color))
-    mesh.position.set(x, y, z)
-    mesh.castShadow = true
-    mesh.receiveShadow = true
-    eyewear.add(mesh)
-  }
-
-  if (style === 'sunglasses') {
-    const frameColor = PALETTE.eyewear.sunglassesFrame
-    const lensColor = PALETTE.eyewear.sunglassesLens
-    const lensGeometry = new THREE.BoxGeometry(size.lensWidth, size.lensHeight, size.lensDepth)
-    const frameGeometry = new THREE.BoxGeometry(size.lensWidth, size.frameWidth, size.frameDepth)
-    const bridgeGeometry = new THREE.BoxGeometry(size.bridgeWidth, size.frameWidth, size.frameDepth)
-    const templeGeometry = new THREE.BoxGeometry(
-      size.templeWidth,
-      size.templeHeight,
-      size.templeLength
-    )
-
-    for (const side of [-1, 1]) {
-      addMesh(lensGeometry, lensColor, side * size.lensSpacing / 2, size.lensY, size.frontZ)
-      addMesh(
-        frameGeometry,
-        frameColor,
-        side * size.lensSpacing / 2,
-        size.lensY + size.lensHeight / 2,
-        size.frontZ
-      )
-      addMesh(
-        templeGeometry,
-        frameColor,
-        side * (size.lensSpacing / 2 + size.lensWidth / 2),
-        size.lensY,
-        size.frontZ - size.templeLength / 2
-      )
-    }
-    addMesh(bridgeGeometry, frameColor, 0, size.lensY, size.frontZ)
-  } else if (style === 'goldAviators') {
-    const frameColor = PALETTE.eyewear.aviatorFrame
-    const lensColor = PALETTE.eyewear.aviatorLens
-    const lensGeometry = new THREE.CircleGeometry(size.lensRadius, size.segments)
-    const frameGeometry = new THREE.TorusGeometry(
-      size.frameRadius,
-      size.frameTubeRadius,
-      size.frameRadialSegments,
-      size.segments
-    )
-    const bridgeGeometry = new THREE.BoxGeometry(
-      size.bridgeWidth,
-      size.bridgeHeight,
-      size.bridgeDepth
-    )
-    const templeGeometry = new THREE.BoxGeometry(
-      size.templeWidth,
-      size.templeHeight,
-      size.templeLength
-    )
-
-    for (const side of [-1, 1]) {
-      const x = side * size.lensSpacing
-      const lens = new THREE.Mesh(lensGeometry, getToonMaterial(lensColor))
-      lens.scale.y = size.lensHeightScale
-      lens.position.set(x, size.lensY, size.frontZ)
-      lens.castShadow = true
-      eyewear.add(lens)
-
-      const frame = new THREE.Mesh(frameGeometry, getToonMaterial(frameColor))
-      frame.scale.y = size.lensHeightScale
-      frame.position.set(x, size.lensY, size.frontZ)
-      frame.castShadow = true
-      eyewear.add(frame)
-
-      addMesh(
-        templeGeometry,
-        frameColor,
-        side * (size.lensSpacing + size.frameRadius),
-        size.lensY,
-        size.frontZ - size.templeLength / 2
-      )
-    }
-    addMesh(bridgeGeometry, frameColor, 0, size.lensY + size.bridgeYOffset, size.frontZ)
-  } else if (style === 'amberVisor') {
-    const visorColor = PALETTE.eyewear.visor
-    const visor = new THREE.BoxGeometry(size.width, size.height, size.depth)
-    const sidePiece = new THREE.BoxGeometry(size.sideWidth, size.sideHeight, size.sideDepth)
-    addMesh(visor, visorColor, 0, size.y, size.frontZ)
-    for (const side of [-1, 1]) {
-      addMesh(sidePiece, visorColor, side * size.width / 2, size.y, size.frontZ - size.sideDepth / 2)
-    }
-  } else if (style === 'goggles') {
-    const frameColor = PALETTE.eyewear.gogglesFrame
-    const lensColor = PALETTE.eyewear.gogglesLens
-    const lensGeometry = new THREE.CircleGeometry(size.lensRadius, size.segments)
-    const frameGeometry = new THREE.TorusGeometry(
-      size.frameRadius,
-      size.frameTubeRadius,
-      size.frameRadialSegments,
-      size.segments
-    )
-    const bridgeGeometry = new THREE.BoxGeometry(
-      size.bridgeWidth,
-      size.bridgeHeight,
-      size.bridgeDepth
-    )
-    const strapGeometry = new THREE.BoxGeometry(size.strapLength, size.strapHeight, size.strapDepth)
-
-    addMesh(strapGeometry, PALETTE.eyewear.strap, 0, size.lensY, size.frontZ - size.strapDepth)
-    for (const side of [-1, 1]) {
-      const x = side * size.lensSpacing
-      addMesh(lensGeometry, lensColor, x, size.lensY, size.frontZ)
-      addMesh(frameGeometry, frameColor, x, size.lensY, size.frontZ)
-    }
-    addMesh(bridgeGeometry, frameColor, 0, size.lensY, size.frontZ)
-  }
-
-  headGroup.add(eyewear)
+  return characterMaterialCache.get(key)
 }
 
 /**
- * Creates the rounded Roblox head geometry.
- * Solid, completely featureless shape with no eyes, nose, or mouth.
+ * Creates the rounded Roblox head geometry (Attachment 1 & 2 inspiration)
  */
 function createRobloxHead(skinMat) {
   const headGroup = new THREE.Group()
@@ -260,14 +160,39 @@ function createRobloxHead(skinMat) {
 }
 
 /**
- * Adds hairstyle and head accessories with chunky toon shapes and highlight layers.
+ * Adds creative face coverings / accessories (Attachment 3 inspiration):
+ * Sunglasses, visors, headphones, beanies, hoods, and chains.
  */
 function addCreativeCovering(headGroup, prof) {
   const type = prof.accessoryType
 
-  if (type === 'adventurer_hair' || type === 'sunglasses_adventurer' || type === 'sunglasses_beanie') {
-    const hairMat = getToonMaterial(prof.hairColor)
-    const highlightMat = getToonMaterial(prof.hairHighlight)
+  if (type === 'sunglasses_adventurer' || type === 'sunglasses_beanie') {
+    // 1. Wayfarer Aviator Sunglasses (Dark curved lenses + gold frame on front +Z)
+    const glassMat = GLASSES_MATERIAL
+    const frameMat = GOLD_MATERIAL // sleek gold
+
+    const leftLens = new THREE.Mesh(SUNGLASSES_LENS_GEO, glassMat)
+    leftLens.position.set(-0.16, 0.06, 0.38)
+
+    const rightLens = new THREE.Mesh(SUNGLASSES_LENS_GEO, glassMat)
+    rightLens.position.set(0.16, 0.06, 0.38)
+
+    const bridge = new THREE.Mesh(SUNGLASSES_BRIDGE_GEO, frameMat)
+    bridge.position.set(0, 0.09, 0.38)
+
+    const topBar = new THREE.Mesh(SUNGLASSES_TOP_BAR_GEO, frameMat)
+    topBar.position.set(0, 0.15, 0.38)
+
+    // Side temple bars connecting to ears
+    const leftTemple = new THREE.Mesh(SUNGLASSES_TEMPLE_GEO, frameMat)
+    leftTemple.position.set(-0.35, 0.08, 0.18)
+    const rightTemple = new THREE.Mesh(SUNGLASSES_TEMPLE_GEO, frameMat)
+    rightTemple.position.set(0.35, 0.08, 0.18)
+
+    headGroup.add(leftLens, rightLens, bridge, topBar, leftTemple, rightTemple)
+
+    // 2. Stylish Adventurer Layered Hair (textured crown + swept front bangs, no leftover blocks)
+    const hairMat = getCharacterMaterial(prof.hairColor)
 
     // Voluminous hair crown dome
     const crown = new THREE.Mesh(HAIR_CROWN_GEO, hairMat)
@@ -276,8 +201,8 @@ function addCreativeCovering(headGroup, prof) {
     crown.castShadow = true
     headGroup.add(crown)
 
-    // Side-swept front bangs with anime highlight chunk
-    const bang1 = new THREE.Mesh(HAIR_BANG_ONE_GEO, highlightMat)
+    // Side-swept front bangs
+    const bang1 = new THREE.Mesh(HAIR_BANG_ONE_GEO, hairMat)
     bang1.position.set(-0.16, 0.25, 0.36)
     bang1.rotation.z = 0.22
     bang1.rotation.y = 0.08
@@ -292,17 +217,29 @@ function addCreativeCovering(headGroup, prof) {
 
     headGroup.add(bang1, bang2, bang3)
 
-    // Smooth rounded back hair
+    // Smooth rounded back hair that neatly wraps the head without protruding blocks
     const backHair = new THREE.Mesh(BACK_HAIR_GEO, hairMat)
     backHair.position.set(0, 0.10, 0)
     headGroup.add(backHair)
+
   }
 
-  else if (type === 'headphones_hair' || type === 'cyber_visor_headphones') {
-    const phoneMat = getToonMaterial(prof.headphonesColor || PALETTE.yellow.base)
-    const strapMat = getToonMaterial(PALETTE.dark.base)
-    const hairMat = getToonMaterial(prof.hairColor)
-    const highlightMat = getToonMaterial(prof.hairHighlight)
+  else if (type === 'cyber_visor_headphones') {
+    // 1. Artificer Cyber Visor (amber-glowing tactical shield on front +Z)
+    const visorMat = ARTIFICER_VISOR_MATERIAL
+    const glowMat = ARTIFICER_GLOW_MATERIAL
+
+    const visorShield = new THREE.Mesh(ARTIFICER_VISOR_GEO, visorMat)
+    visorShield.position.set(0, 0.05, 0.37)
+
+    const glowStrip = new THREE.Mesh(ARTIFICER_GLOW_STRIP_GEO, glowMat)
+    glowStrip.position.set(0, 0.05, 0.375)
+
+    headGroup.add(visorShield, glowStrip)
+
+    // 2. Heavy-duty Studio Headphones (like yellow headphones in Attachment 3)
+    const phoneMat = HEADPHONE_MATERIAL // industrial yellow/orange
+    const strapMat = HEADPHONE_STRAP_MATERIAL
 
     // Over-ear pads
     const leftPad = new THREE.Mesh(HEADPHONE_PAD_GEO, phoneMat)
@@ -320,17 +257,29 @@ function addCreativeCovering(headGroup, prof) {
 
     headGroup.add(leftPad, rightPad, band)
 
-    // Spiky dark hair on top with highlight shape
+    // Spiky dark hair on top
+    const hairMat = getCharacterMaterial(prof.hairColor)
     const topHair = new THREE.Mesh(ARTIFICER_HAIR_GEO, hairMat)
     topHair.position.y = 0.38
-    const hairSpike = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.14, 0.3), highlightMat)
-    hairSpike.position.set(0.12, 0.46, 0.1)
-    headGroup.add(topHair, hairSpike)
+    headGroup.add(topHair)
   }
 
-  else if (type === 'mystic_cowl' || type === 'mystic_cowl_visor') {
-    const hoodMat = getToonMaterial(prof.hoodColor || PALETTE.professions.mystic.hood)
-    const hoodTrimMat = getToonMaterial(prof.hoodTrimColor || PALETTE.professions.mystic.hoodTrim)
+  else if (type === 'mystic_cowl_visor') {
+    // 1. Mystic Shadow Visor with glowing runic slit
+    const darkVisorMat = MYSTIC_VISOR_MATERIAL
+    const runeGlowMat = MYSTIC_RUNE_MATERIAL
+
+    const visor = new THREE.Mesh(MYSTIC_VISOR_GEO, darkVisorMat)
+    visor.position.set(0, 0.04, 0.37)
+
+    const runicSlit = new THREE.Mesh(MYSTIC_RUNE_GEO, runeGlowMat)
+    runicSlit.position.set(0, 0.04, 0.375)
+
+    headGroup.add(visor, runicSlit)
+
+    // 2. Mystic Hood / Cowl draped around the head
+    const hoodMat = MYSTIC_HOOD_MATERIAL // deep royal purple
+    const hoodTrimMat = MYSTIC_TRIM_MATERIAL
 
     const hoodDome = new THREE.Mesh(MYSTIC_HOOD_GEO, hoodMat)
     hoodDome.scale.set(1.05, 0.9, 1.1)
@@ -345,91 +294,109 @@ function addCreativeCovering(headGroup, prof) {
     headGroup.add(hoodDome, hoodRim)
   }
 
-  else if (type === 'styled_hair' || type === 'designer_shades_chain') {
-    const hairMat = getToonMaterial(prof.hairColor)
-    const highlightMat = getToonMaterial(prof.hairHighlight)
+  else if (type === 'designer_shades_chain') {
+    // 1. Tycoon Designer Black Sunglasses (like center avatar in Attachment 3)
+    const frameMat = TYCOON_FRAME_MATERIAL
+    const lensMat = TYCOON_LENS_MATERIAL
 
+    const leftLens = new THREE.Mesh(TYCOON_LENS_GEO, lensMat)
+    leftLens.position.set(-0.16, 0.06, 0.38)
+
+    const rightLens = new THREE.Mesh(TYCOON_LENS_GEO, lensMat)
+    rightLens.position.set(0.16, 0.06, 0.38)
+
+    const frameOuter = new THREE.Mesh(TYCOON_FRAME_GEO, frameMat)
+    frameOuter.position.set(0, 0.06, 0.36)
+
+    const templeLeft = new THREE.Mesh(TYCOON_ARMS_GEO, frameMat)
+    templeLeft.position.set(-0.34, 0.08, 0.13)
+
+    const templeRight = new THREE.Mesh(TYCOON_ARMS_GEO, frameMat)
+    templeRight.position.set(0.34, 0.08, 0.13)
+
+    headGroup.add(leftLens, rightLens, frameOuter, templeLeft, templeRight)
+
+    // 2. Sleek styled dark hair (combed back and parted)
+    const hairMat = getCharacterMaterial(prof.hairColor)
     const hairMain = new THREE.Mesh(TYCOON_HAIR_MAIN_GEO, hairMat)
     hairMain.position.set(0, 0.35, -0.04)
-
-    const hairHighlight = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.6), highlightMat)
-    hairHighlight.position.set(-0.15, 0.46, -0.04)
 
     const hairBack = new THREE.Mesh(TYCOON_HAIR_BACK_GEO, hairMat)
     hairBack.position.set(0, 0.15, -0.34)
 
-    headGroup.add(hairMain, hairHighlight, hairBack)
+    headGroup.add(hairMain, hairBack)
   }
 }
 
 /**
- * Creates the classic Roblox C-clamp shaped hand
+ * Creates the classic Roblox C-clamp shaped hand (Attachment 1 & 2)
  */
 function createRobloxCHand(skinMat, side = 'left') {
   const handGroup = new THREE.Group()
   handGroup.name = 'RobloxCHand'
 
+  // Wrist cylinder
   const wrist = new THREE.Mesh(WRIST_GEO, skinMat)
   wrist.position.y = 0.05
   handGroup.add(wrist)
 
+  // C-Clamp hand using open Torus geometry (arc of 270 degrees)
   const clamp = new THREE.Mesh(HAND_CLAMP_GEO, skinMat)
   clamp.rotation.x = Math.PI / 2
-  clamp.rotation.y = side === 'left' ? Math.PI : 0
-  clamp.position.y = -0.06
+  clamp.rotation.z = side === 'left' ? Math.PI / 4 : -Math.PI / 4
+  clamp.position.y = -0.10
+  clamp.castShadow = true
   handGroup.add(clamp)
 
-  handGroup.traverse(object => {
-    object.castShadow = true
-    object.receiveShadow = true
-  })
   return handGroup
 }
 
 /**
- * Creates shoe with rounded toe dome
+ * Creates shoes with rounded front toe caps (Attachment 1 & 2)
  */
 function createRobloxShoe(shoeMat) {
   const shoeGroup = new THREE.Group()
-  shoeGroup.name = 'RobloxShoe'
 
+  // 1. Shoe base
   const base = new THREE.Mesh(SHOE_BASE_GEO, shoeMat)
-  base.position.set(0, -0.01, 0)
+  base.position.set(0, 0, -0.04)
   base.castShadow = true
   base.receiveShadow = true
   shoeGroup.add(base)
 
+  // 2. Rounded Toe Dome on the FRONT (+Z)
   const toe = new THREE.Mesh(SHOE_TOE_GEO, shoeMat)
-  toe.rotation.x = Math.PI / 2
-  toe.scale.set(1.0, 1.25, 0.95)
-  toe.position.set(0, 0.0, 0.20)
+  toe.scale.set(1.0, 0.72, 1.25)
+  toe.position.set(0, -0.09, 0.15) // Front of shoe
   toe.castShadow = true
-  toe.receiveShadow = true
   shoeGroup.add(toe)
 
   return shoeGroup
 }
 
 /**
- * High-resolution canvas billboard name tag
+ * Creates a billboard text canvas texture for player name tag
  */
-function createNameTag(playerName = 'Player') {
+export function createNameTag(playerName) {
   const canvas = document.createElement('canvas')
   canvas.width = 256
   canvas.height = 64
   const ctx = canvas.getContext('2d')
 
-  ctx.fillStyle = 'rgba(18, 24, 38, 0.85)'
+  // Dark background container
+  ctx.fillStyle = 'rgba(10, 10, 20, 0.85)'
   ctx.beginPath()
-  ctx.roundRect(16, 8, 224, 48, 8)
+  ctx.roundRect(4, 4, 248, 56, 12)
   ctx.fill()
 
-  ctx.strokeStyle = '#f5c518'
+  // Gold border
+  ctx.strokeStyle = '#c9a84c'
   ctx.lineWidth = 2
   ctx.stroke()
 
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 22px Arial, sans-serif'
+  // Player name text
+  ctx.fillStyle = '#c9a84c'
+  ctx.font = 'bold 24px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(playerName, 128, 32)
@@ -448,14 +415,10 @@ function createNameTag(playerName = 'Player') {
 }
 
 /**
- * Builds a blocky Roblox-style humanoid character with toon shading,
- * palette integration, clean outlines, and an optional faceless design.
+ * Builds a blocky Roblox-style humanoid character with rounded features,
+ * creative coverings, distinct front/back directionality, and pivot groups.
  */
-export function createCharacter(
-  professionKey = 'wayfarer',
-  playerName = 'Player',
-  characterConfig = CONFIG.characters.npcDefault
-) {
+export function createCharacter(professionKey = 'wayfarer', playerName = 'Player') {
   const prof = PROFESSIONS[professionKey.toLowerCase()] || PROFESSIONS.wayfarer
   const characterGroup = new THREE.Group()
   characterGroup.name = `Character_${playerName}`
@@ -464,22 +427,22 @@ export function createCharacter(
   visualGroup.position.y = 0.25
   characterGroup.add(visualGroup)
 
-  // Toon materials from master PALETTE
-  const skinMat = getToonMaterial(PALETTE.skin.base)
-  const torsoMat = getToonMaterial(prof.torsoColor)
-  const trouserMat = getToonMaterial(prof.trouserColor)
-  const shoeMat = getToonMaterial(PALETTE.dark.base)
-  const beltMat = getToonMaterial(prof.beltColor || PALETTE.dark.shadow)
-  const buckleMat = getToonMaterial(prof.accentColor)
-  const strapMat = getToonMaterial(PALETTE.outline)
-  const backpackMat = getToonMaterial(PALETTE.dark.base)
+  // Common materials
+  const skinMat = SKIN_MATERIAL
+  const torsoMat = getCharacterMaterial(prof.torsoColor)
+  const trouserMat = getCharacterMaterial(prof.trouserColor)
+  const shoeMat = SHOE_MATERIAL
+  const beltMat = getCharacterMaterial(prof.beltColor || 0x3d2414)
+  const buckleMat = getCharacterMaterial(prof.accentColor)
+  const strapMat = STRAP_MATERIAL
 
   const torsoHeight = prof.torsoHeight
 
-  // ─── 1. TORSO ─────────────────────────────────────────────────────────────
+  // ─── 1. TORSO (Tapered upper chest + waist + backpack) ───────────────────
   const torsoGroup = new THREE.Group()
   torsoGroup.name = 'TorsoGroup'
 
+  // Upper Chest (wider at shoulders)
   const chestGeo = torsoHeight === 1.25 ? MYSTIC_CHEST_GEO : STANDARD_CHEST_GEO
   const chest = new THREE.Mesh(chestGeo, torsoMat)
   chest.position.y = 1.15 + (torsoHeight - 1.0) * 0.4
@@ -493,7 +456,7 @@ export function createCharacter(
   waist.castShadow = true
   torsoGroup.add(waist)
 
-  // Belt
+  // Belt - clearly pronounced and distinct from pants
   const belt = new THREE.Mesh(BELT_GEO, beltMat)
   belt.position.y = 0.73
   torsoGroup.add(belt)
@@ -503,13 +466,13 @@ export function createCharacter(
   buckle.position.set(0, 0.73, 0.20)
   torsoGroup.add(buckle)
 
-  // Backpack on BACK (-Z)
-  const backpack = new THREE.Mesh(BACKPACK_GEO, backpackMat)
-  backpack.position.set(0, 1.15 + (torsoHeight - 1.0) * 0.4, -0.28)
+  // Backpack on BACK (-Z) with straps on FRONT (+Z) (Attachment 3 inspiration)
+  const backpack = new THREE.Mesh(BACKPACK_GEO, BACKPACK_MATERIAL)
+  backpack.position.set(0, 1.15 + (torsoHeight - 1.0) * 0.4, -0.28) // Sitting on BACK
   backpack.castShadow = true
   torsoGroup.add(backpack)
 
-  // Front shoulder straps
+  // Front shoulder straps (clearly indicates FRONT of torso)
   const leftStrap = new THREE.Mesh(SHOULDER_STRAP_GEO, strapMat)
   leftStrap.position.set(-0.25, 1.15 + (torsoHeight - 1.0) * 0.4, 0.06)
   const rightStrap = new THREE.Mesh(SHOULDER_STRAP_GEO, strapMat)
@@ -518,23 +481,28 @@ export function createCharacter(
 
   // Profession details on chest
   if (prof.hasApron) {
-    const apronMat = getToonMaterial(PALETTE.orange.base)
+    // Artificer high-vis apron — stays above belt (belt top = ~0.785, apron bottom must be > 0.785)
+    // apron height 0.48, center at y=1.07 → bottom edge = 1.07 - 0.24 = 0.83 ✓
+    const apronMat = getCharacterMaterial(0xe85d04) // vivid orange
     const apronBody = new THREE.Mesh(APRON_GEO, apronMat)
     apronBody.position.set(0, 1.08, 0)
     torsoGroup.add(apronBody)
 
-    const pocketMat = getToonMaterial(PALETTE.orange.shadow)
+    // Apron bib pocket (darker tone)
+    const pocketMat = getCharacterMaterial(0xc2440a)
     const pocket = new THREE.Mesh(APRON_POCKET_GEO, pocketMat)
     pocket.position.set(0, 0.96, 0)
     torsoGroup.add(pocket)
-  } else if (prof.name === 'Tycoon') {
-    const chainMat = getToonMaterial(PALETTE.gold.light)
+  } else if (prof.accessoryType === 'designer_shades_chain') {
+    // Tycoon gold chain necklace on front chest
+    const chainMat = getCharacterMaterial(0xe5c07b)
     const chain = new THREE.Mesh(CHAIN_GEO, chainMat)
     chain.position.set(0, 1.40, 0.21)
     chain.rotation.x = Math.PI / 1.4
     torsoGroup.add(chain)
   } else if (prof.name === 'Wayfarer') {
-    const zipperMat = getToonMaterial(PALETTE.gold.base)
+    // Subtle central zipper line on leather jacket
+    const zipperMat = getCharacterMaterial(0x1f242d)
     const zipper = new THREE.Mesh(ZIPPER_GEO, zipperMat)
     zipper.position.set(0, 1.15 + (torsoHeight - 1.0) * 0.4, 0.205)
     torsoGroup.add(zipper)
@@ -542,11 +510,10 @@ export function createCharacter(
 
   visualGroup.add(torsoGroup)
 
-  // ─── 2. HEAD & CREATIVE COVERINGS (Faceless) ─────────────────────────────
+  // ─── 2. HEAD & CREATIVE COVERINGS (Attachment 1, 2 & 3) ───────────────────
   const headGroup = createRobloxHead(skinMat)
   headGroup.position.y = 1.95 + (torsoHeight - 1.0)
   addCreativeCovering(headGroup, prof)
-  createEyewear(headGroup, characterConfig?.eyewear)
   visualGroup.add(headGroup)
 
   // ─── 3. ARMS WITH C-HANDS & SHOULDER PIVOTS ───────────────────────────────
@@ -558,7 +525,7 @@ export function createCharacter(
   leftArmGroup.name = 'LeftArmGroup'
   leftArmGroup.position.set(-0.54, 1.45 + (torsoHeight - 1.0) * 0.6, 0)
 
-  const leftArmMesh = new THREE.Mesh(armGeo, torsoMat)
+  const leftArmMesh = new THREE.Mesh(armGeo, torsoMat) // sleeve color
   leftArmMesh.position.set(0, -armHeight / 2, 0)
   leftArmMesh.castShadow = true
   leftArmGroup.add(leftArmMesh)
@@ -575,7 +542,7 @@ export function createCharacter(
   rightArmGroup.name = 'RightArmGroup'
   rightArmGroup.position.set(0.54, 1.45 + (torsoHeight - 1.0) * 0.6, 0)
 
-  const rightArmMesh = new THREE.Mesh(armGeo, torsoMat)
+  const rightArmMesh = new THREE.Mesh(armGeo, torsoMat) // sleeve color
   rightArmMesh.position.set(0, -armHeight / 2, 0)
   rightArmMesh.castShadow = true
   rightArmGroup.add(rightArmMesh)
@@ -631,7 +598,6 @@ export function createCharacter(
   nameTag.position.y = 2.95 + (torsoHeight - 1.0)
   visualGroup.add(nameTag)
 
-  // ─── 6. CEL-SHADED OUTLINES (Step 7.3) ───────────────────────────────────
   applyOutlinesToGroup(visualGroup, 0.024, PALETTE.outline)
 
   return {
