@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { createOcean } from './ocean.js'
+import { PALETTE } from '../palette.js'
+import { getToonMaterial, applyOutlinesToGroup } from '../materials.js'
 
 export const SCALE = 3
 
@@ -105,9 +107,8 @@ export async function createWorldTerrain(scene, geojsonUrl = '/assets/world.geoj
     bevelEnabled: false
   }
 
-  // Continent material: MeshLambertMaterial({ color: 0x4a6741 })
-  const defaultLandMaterial = new THREE.MeshLambertMaterial({
-    color: 0x4a6741,
+  // Continent material: Toon shaded anime grass (no outlines as per 7.2 & 7.3)
+  const defaultLandMaterial = getToonMaterial(PALETTE.biome.grass, {
     side: THREE.DoubleSide
   })
 
@@ -188,10 +189,7 @@ export function addTestValidationBoxes(scene) {
   group.name = 'TestValidationBoxes'
 
   const boxGeo = new THREE.BoxGeometry(2, 2, 2)
-  const boxMat = new THREE.MeshLambertMaterial({
-    color: 0xff2222,
-    emissive: 0x330000
-  })
+  const boxMat = getToonMaterial(PALETTE.red.base)
 
   testLocations.forEach(loc => {
     const { x, z } = projectCoord(loc.lng, loc.lat, SCALE)
@@ -208,6 +206,7 @@ export function addTestValidationBoxes(scene) {
     group.add(box)
   })
 
+  applyOutlinesToGroup(group, 0.04)
   scene.add(group)
   return group
 }

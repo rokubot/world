@@ -1,7 +1,6 @@
 import * as THREE from 'three'
+import { CONFIG } from '../config.js'
 
-const SPEED = 8
-const SPRINT = 16
 const keys = new Set()
 const forward = new THREE.Vector3()
 const right = new THREE.Vector3()
@@ -9,7 +8,7 @@ const move = new THREE.Vector3()
 
 export function createControls(renderer, callbacks = {}) {
   let yaw = 0
-  let pitch = 0.3
+  let pitch = 0.1
   let cameraMode = 0
   let lastMove = new THREE.Vector3()
   let isDragging = false
@@ -58,7 +57,9 @@ export function createControls(renderer, callbacks = {}) {
 
   return {
     updateMovement(dt, playerGroup) {
-      const speed = keys.has('ShiftLeft') || keys.has('ShiftRight') ? SPRINT : SPEED
+      const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight'))
+        ? CONFIG.player.sprintSpeed
+        : CONFIG.player.walkSpeed
       move.set(0, 0, 0)
 
       if (cameraMode === 0) {

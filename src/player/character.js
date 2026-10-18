@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { PALETTE } from '../palette.js'
+import { getToonMaterial, applyOutlinesToGroup } from '../materials.js'
 
 /**
  * Profession color & style configurations as specified
@@ -57,7 +59,7 @@ const NECK_GEO = new THREE.CylinderGeometry(0.18, 0.20, 0.14, 16)
 const SUNGLASSES_LENS_GEO = new THREE.BoxGeometry(0.24, 0.16, 0.08)
 const SUNGLASSES_BRIDGE_GEO = new THREE.BoxGeometry(0.10, 0.04, 0.09)
 const SUNGLASSES_TOP_BAR_GEO = new THREE.BoxGeometry(0.62, 0.04, 0.08)
-const SUNGLASSES_TEMPLE_GEO = new THREE.BoxGeometry(0.04, 0.04, 0.38)
+const SUNGLASSES_TEMPLE_GEO = new THREE.BoxGeometry(0.12, 0.04, 0.38)
 const HAIR_CROWN_GEO = new THREE.SphereGeometry(0.44, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2)
 const HAIR_BANG_ONE_GEO = new THREE.BoxGeometry(0.24, 0.16, 0.14)
 const HAIR_BANG_TWO_GEO = new THREE.BoxGeometry(0.22, 0.15, 0.14)
@@ -74,7 +76,7 @@ const MYSTIC_HOOD_GEO = new THREE.SphereGeometry(0.46, 20, 14, 0, Math.PI * 2, 0
 const MYSTIC_HOOD_RIM_GEO = new THREE.TorusGeometry(0.46, 0.06, 8, 20, Math.PI * 1.2)
 const TYCOON_LENS_GEO = new THREE.BoxGeometry(0.25, 0.16, 0.08)
 const TYCOON_FRAME_GEO = new THREE.BoxGeometry(0.66, 0.20, 0.06)
-const TYCOON_ARMS_GEO = new THREE.BoxGeometry(0.04, 0.04, 0.42)
+const TYCOON_ARMS_GEO = new THREE.BoxGeometry(0.08, 0.04, 0.58)
 const TYCOON_HAIR_MAIN_GEO = new THREE.BoxGeometry(0.78, 0.22, 0.82)
 const TYCOON_HAIR_BACK_GEO = new THREE.BoxGeometry(0.70, 0.35, 0.22)
 const WRIST_GEO = new THREE.CylinderGeometry(0.10, 0.12, 0.10, 12)
@@ -95,30 +97,30 @@ const ZIPPER_GEO = new THREE.BoxGeometry(0.04, 0.65, 0.02)
 const ARM_GEO = new THREE.CylinderGeometry(0.17, 0.17 * 0.9, 0.68, 14)
 const LEG_GEO = new THREE.BoxGeometry(0.32, 0.85, 0.34)
 
-const SKIN_MATERIAL = new THREE.MeshLambertMaterial({ color: SKIN_COLOR })
-const SHOE_MATERIAL = new THREE.MeshLambertMaterial({ color: SHOE_COLOR })
-const STRAP_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x181a1f })
-const GLASSES_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x10141c })
-const GOLD_MATERIAL = new THREE.MeshLambertMaterial({ color: 0xd4af37 })
-const BACKPACK_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x1e242c })
-const ARTIFICER_VISOR_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x18202a })
-const ARTIFICER_GLOW_MATERIAL = new THREE.MeshLambertMaterial({ color: 0xff7700, emissive: 0x883300 })
-const HEADPHONE_MATERIAL = new THREE.MeshLambertMaterial({ color: 0xffa500 })
-const HEADPHONE_STRAP_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x111111 })
-const MYSTIC_VISOR_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x120824 })
-const MYSTIC_RUNE_MATERIAL = new THREE.MeshLambertMaterial({ color: 0xc084fc, emissive: 0x7e22ce })
-const MYSTIC_HOOD_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x3b0764 })
-const MYSTIC_TRIM_MATERIAL = new THREE.MeshLambertMaterial({ color: 0xa855f7 })
-const TYCOON_FRAME_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x050505 })
-const TYCOON_LENS_MATERIAL = new THREE.MeshLambertMaterial({ color: 0x1e293b })
+const SKIN_MATERIAL = getToonMaterial(SKIN_COLOR)
+const SHOE_MATERIAL = getToonMaterial(SHOE_COLOR)
+const STRAP_MATERIAL = getToonMaterial(0x181a1f)
+const GLASSES_MATERIAL = getToonMaterial(0x10141c)
+const GOLD_MATERIAL = getToonMaterial(0xd4af37)
+const BACKPACK_MATERIAL = getToonMaterial(0x1e242c)
+const ARTIFICER_VISOR_MATERIAL = getToonMaterial(0x18202a)
+const ARTIFICER_GLOW_MATERIAL = getToonMaterial(0xff7700, { emissive: 0x883300 })
+const HEADPHONE_MATERIAL = getToonMaterial(0xffa500)
+const HEADPHONE_STRAP_MATERIAL = getToonMaterial(0x111111)
+const MYSTIC_VISOR_MATERIAL = getToonMaterial(0x120824)
+const MYSTIC_RUNE_MATERIAL = getToonMaterial(0xc084fc, { emissive: 0x7e22ce })
+const MYSTIC_HOOD_MATERIAL = getToonMaterial(0x3b0764)
+const MYSTIC_TRIM_MATERIAL = getToonMaterial(0xa855f7)
+const TYCOON_FRAME_MATERIAL = getToonMaterial(0x050505)
+const TYCOON_LENS_MATERIAL = getToonMaterial(0x1e293b)
 
-const lambertMaterialCache = new Map()
-function getLambertMaterial(color, emissive = 0) {
+const characterMaterialCache = new Map()
+function getCharacterMaterial(color, emissive = 0) {
   const key = `${color}:${emissive}`
-  if (!lambertMaterialCache.has(key)) {
-    lambertMaterialCache.set(key, new THREE.MeshLambertMaterial({ color, emissive }))
+  if (!characterMaterialCache.has(key)) {
+    characterMaterialCache.set(key, getToonMaterial(color, { emissive }))
   }
-  return lambertMaterialCache.get(key)
+  return characterMaterialCache.get(key)
 }
 
 /**
@@ -190,7 +192,7 @@ function addCreativeCovering(headGroup, prof) {
     headGroup.add(leftLens, rightLens, bridge, topBar, leftTemple, rightTemple)
 
     // 2. Stylish Adventurer Layered Hair (textured crown + swept front bangs, no leftover blocks)
-    const hairMat = getLambertMaterial(prof.hairColor)
+    const hairMat = getCharacterMaterial(prof.hairColor)
 
     // Voluminous hair crown dome
     const crown = new THREE.Mesh(HAIR_CROWN_GEO, hairMat)
@@ -256,7 +258,7 @@ function addCreativeCovering(headGroup, prof) {
     headGroup.add(leftPad, rightPad, band)
 
     // Spiky dark hair on top
-    const hairMat = getLambertMaterial(prof.hairColor)
+    const hairMat = getCharacterMaterial(prof.hairColor)
     const topHair = new THREE.Mesh(ARTIFICER_HAIR_GEO, hairMat)
     topHair.position.y = 0.38
     headGroup.add(topHair)
@@ -306,16 +308,16 @@ function addCreativeCovering(headGroup, prof) {
     const frameOuter = new THREE.Mesh(TYCOON_FRAME_GEO, frameMat)
     frameOuter.position.set(0, 0.06, 0.36)
 
-    const armsLeft = new THREE.Mesh(TYCOON_ARMS_GEO, frameMat)
-    armsLeft.position.set(-0.35, 0.08, 0.16)
+    const templeLeft = new THREE.Mesh(TYCOON_ARMS_GEO, frameMat)
+    templeLeft.position.set(-0.34, 0.08, 0.13)
 
-    const armsRight = new THREE.Mesh(TYCOON_ARMS_GEO, frameMat)
-    armsRight.position.set(0.35, 0.08, 0.16)
+    const templeRight = new THREE.Mesh(TYCOON_ARMS_GEO, frameMat)
+    templeRight.position.set(0.34, 0.08, 0.13)
 
-    headGroup.add(leftLens, rightLens, frameOuter, armsLeft, armsRight)
+    headGroup.add(leftLens, rightLens, frameOuter, templeLeft, templeRight)
 
     // 2. Sleek styled dark hair (combed back and parted)
-    const hairMat = getLambertMaterial(prof.hairColor)
+    const hairMat = getCharacterMaterial(prof.hairColor)
     const hairMain = new THREE.Mesh(TYCOON_HAIR_MAIN_GEO, hairMat)
     hairMain.position.set(0, 0.35, -0.04)
 
@@ -427,11 +429,11 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
 
   // Common materials
   const skinMat = SKIN_MATERIAL
-  const torsoMat = getLambertMaterial(prof.torsoColor)
-  const trouserMat = getLambertMaterial(prof.trouserColor)
+  const torsoMat = getCharacterMaterial(prof.torsoColor)
+  const trouserMat = getCharacterMaterial(prof.trouserColor)
   const shoeMat = SHOE_MATERIAL
-  const beltMat = getLambertMaterial(prof.beltColor || 0x3d2414)
-  const buckleMat = getLambertMaterial(prof.accentColor)
+  const beltMat = getCharacterMaterial(prof.beltColor || 0x3d2414)
+  const buckleMat = getCharacterMaterial(prof.accentColor)
   const strapMat = STRAP_MATERIAL
 
   const torsoHeight = prof.torsoHeight
@@ -481,26 +483,26 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   if (prof.hasApron) {
     // Artificer high-vis apron — stays above belt (belt top = ~0.785, apron bottom must be > 0.785)
     // apron height 0.48, center at y=1.07 → bottom edge = 1.07 - 0.24 = 0.83 ✓
-    const apronMat = getLambertMaterial(0xe85d04) // vivid orange
+    const apronMat = getCharacterMaterial(0xe85d04) // vivid orange
     const apronBody = new THREE.Mesh(APRON_GEO, apronMat)
     apronBody.position.set(0, 1.08, 0)
     torsoGroup.add(apronBody)
 
     // Apron bib pocket (darker tone)
-    const pocketMat = getLambertMaterial(0xc2440a)
+    const pocketMat = getCharacterMaterial(0xc2440a)
     const pocket = new THREE.Mesh(APRON_POCKET_GEO, pocketMat)
     pocket.position.set(0, 0.96, 0)
     torsoGroup.add(pocket)
   } else if (prof.accessoryType === 'designer_shades_chain') {
     // Tycoon gold chain necklace on front chest
-    const chainMat = getLambertMaterial(0xe5c07b)
+    const chainMat = getCharacterMaterial(0xe5c07b)
     const chain = new THREE.Mesh(CHAIN_GEO, chainMat)
     chain.position.set(0, 1.40, 0.21)
     chain.rotation.x = Math.PI / 1.4
     torsoGroup.add(chain)
   } else if (prof.name === 'Wayfarer') {
     // Subtle central zipper line on leather jacket
-    const zipperMat = getLambertMaterial(0x1f242d)
+    const zipperMat = getCharacterMaterial(0x1f242d)
     const zipper = new THREE.Mesh(ZIPPER_GEO, zipperMat)
     zipper.position.set(0, 1.15 + (torsoHeight - 1.0) * 0.4, 0.205)
     torsoGroup.add(zipper)
@@ -595,6 +597,8 @@ export function createCharacter(professionKey = 'wayfarer', playerName = 'Player
   const nameTag = createNameTag(playerName)
   nameTag.position.y = 2.95 + (torsoHeight - 1.0)
   visualGroup.add(nameTag)
+
+  applyOutlinesToGroup(visualGroup, 0.024, PALETTE.outline)
 
   return {
     group: characterGroup,
