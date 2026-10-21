@@ -8,6 +8,7 @@ import { createVehicleSystem } from './vehicles/vehicle.js'
 import { CONFIG } from './config.js'
 import { PALETTE } from './palette.js'
 import { getToonMaterial } from './materials.js'
+import { initCharacterSelect } from './character-selection/CharacterSelection.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -158,7 +159,7 @@ function flyTo(x, y, z, lookX, lookY, lookZ) {
 
 // Player state (Step 3 & 7)
 let player = null
-let currentProfession = 'wayfarer'
+let currentProfession = null
 let playerName = 'Tariq (Roku)'
 const animationStart = performance.now()
 
@@ -231,16 +232,6 @@ function setupUI() {
     })
   }
 
-  // Step 3 profession switcher buttons
-  const profButtons = document.querySelectorAll('.prof-btn')
-  profButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      profButtons.forEach(b => b.classList.remove('active'))
-      btn.classList.add('active')
-      currentProfession = btn.dataset.prof
-      spawnPlayer(currentProfession, playerName)
-    })
-  })
 }
 
 // Window resize handler
@@ -257,6 +248,9 @@ async function init() {
   const hudStats = document.getElementById('hud-stats')
 
   try {
+    loadingStatus.textContent = 'Checking player archetype...'
+    currentProfession = await initCharacterSelect()
+
     loadingStatus.textContent = 'Generating continent 3D meshes...'
     const terrainData = await createWorldTerrain(scene, '/assets/world.geojson')
     terrainRef = terrainData

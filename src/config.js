@@ -158,3 +158,5 @@ export const CONFIG = {
     bundleLifetimeSec: 15 * 60 // 15 minutes
   }
 }
+
+export const API_BASE_URL = import.meta.env.DEV ? '/api' : 'https://api.rokubot.com/api'

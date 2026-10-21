@@ -8,8 +8,10 @@ export default defineConfig({
     port: 5173,
     host: true,
     proxy: {
-      '/api': 'https://rokubot.com',
-      '/socket.io': { target: 'https://rokubot.com', ws: true }
+      '/api': {
+        target: 'https://api.rokubot.com',
+        changeOrigin: true
+      }
     }
   }
 })

@@ -125,6 +125,30 @@ export const PALETTE = Object.freeze({
     cloudShadow: 0xcfdbe8
   },
 
+  // Warrior (Augmenter)
+  hairBrown: 0x4a2e15,
+  armourMaroon: 0x6e2c2c,
+  armourTrimTan: 0xc49a6c,
+  plateGrey: 0x60656a,
+  gauntletDark: 0x2a2a2a,
+  leatherBrown: 0x5c3a21,
+  bladeGrey: 0xa8b5c2,
+  gemRed: 0xff1111,
+  pommelGold: 0xf2c94c,
+  maskCharcoal: 0x2d2d2d,
+  gogglesLens: 0x88929e,
+
+  // Mage (Conjurer)
+  hoodCharcoal: 0x363442,
+  robePurple: 0x5a3d7a,
+  robeBlue: 0x2d3a66,
+  trimGold: 0xd4af37,
+  sashPurple: 0x422659,
+  lensAmber: 0xd97725,
+  crystalBlue: 0x44aaff,
+  staffBrown: 0x4a3320,
+  skinTone: 0xffcc99,
+
   // Character Professions
   professions: {
     wayfarer: {
