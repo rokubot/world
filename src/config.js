@@ -4,6 +4,10 @@
  */
 
 export const CONFIG = {
+  api: {
+    requestTimeoutMs: 8000
+  },
+
   // Movement & Player Speeds
   player: {
     walkSpeed: 8,

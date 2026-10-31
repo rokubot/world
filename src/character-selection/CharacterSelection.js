@@ -1,12 +1,17 @@
 import { PALETTE } from '../palette.js'
-import { API_BASE_URL } from '../config.js'
+import { API_BASE_URL, CONFIG } from '../config.js'
 import { createArchetypeSelector } from './ArchetypeSelector.js'
 import { createCharacterPreview } from './CharacterPreview.js'
 import { createConfirmationDialog } from './ConfirmationDialog.js'
 import { ARCHETYPE_IDS, getArchetypeDefinition } from './characterDefinitions.js'
 import './CharacterSelection.css'
 
-const PLAYER_CACHE_KEY = 'roku-world:savedPlayer'
+const PLAYER_CACHE_PREFIX = 'roku-world:savedPlayer:'
+const PLAYER_CACHE_POINTER = 'roku-world:lastSavedPlayerKey'
+const UNOWNED_CACHE_KEY = `${PLAYER_CACHE_PREFIX}unassigned`
+const LEGACY_CACHE_KEY = 'roku-world:savedPlayer'
+const memorySelections = new Map()
+let memoryLastCacheKey = null
 
 function createRevision() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -16,26 +21,79 @@ function colorHex(color) {
   return `#${color.toString(16).padStart(6, '0')}`
 }
 
-function readLocalSelection() {
+function readLocalRecord(cacheKey) {
+  const memorySelection = memorySelections.get(cacheKey)
+  if (memorySelection) return { ...memorySelection }
+
   try {
-    const cached = JSON.parse(localStorage.getItem(PLAYER_CACHE_KEY))
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
     if (ARCHETYPE_IDS.has(cached?.characterId)) {
-      return {
+      const selection = {
         archetype: cached.characterId,
         characterName: cached.characterName,
         pendingSync: cached.pendingSync === true,
         revision: cached.revision,
-        playerId: cached.playerId ?? null
+        ownerPlayerId: cached.ownerPlayerId ?? null,
+        createdAt: cached.createdAt,
+        persistent: true,
+        cacheKey
       }
+      memorySelections.set(cacheKey, selection)
+      return { ...selection }
     }
-    localStorage.removeItem(PLAYER_CACHE_KEY)
+    if (cached) localStorage.removeItem(cacheKey)
   } catch {
     return null
   }
   return null
 }
 
-function saveLocalSelection(archetype, { pendingSync = true, playerId = null, revision = createRevision() } = {}) {
+function readLocalSelection(playerId) {
+  if (typeof playerId !== 'string' || !playerId.trim()) return null
+  return readLocalRecord(`${PLAYER_CACHE_PREFIX}${encodeURIComponent(playerId)}`)
+}
+
+function readLastLocalSelection() {
+  try {
+    const cacheKey = memoryLastCacheKey ?? localStorage.getItem(PLAYER_CACHE_POINTER)
+    if (cacheKey) {
+      const cached = readLocalRecord(cacheKey)
+      if (cached) return cached
+    }
+
+    const cachedKeys = Object.keys(localStorage)
+      .filter(key => key.startsWith(PLAYER_CACHE_PREFIX))
+      .sort((left, right) => {
+        const leftSelection = readLocalRecord(left)
+        const rightSelection = readLocalRecord(right)
+        return (rightSelection?.createdAt ?? 0) - (leftSelection?.createdAt ?? 0)
+      })
+    for (const key of cachedKeys) {
+      const cached = readLocalRecord(key)
+      if (cached) return cached
+    }
+
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_CACHE_KEY))
+    if (ARCHETYPE_IDS.has(legacy?.characterId)) {
+      return saveLocalSelection(legacy.characterId, {
+        pendingSync: legacy.pendingSync === true,
+        ownerPlayerId: legacy.ownerPlayerId ?? legacy.playerId ?? null,
+        revision: legacy.revision ?? createRevision(),
+        createdAt: legacy.createdAt ?? legacy.updatedAt ?? Date.now()
+      })
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+function saveLocalSelection(archetype, {
+  pendingSync = true,
+  ownerPlayerId = null,
+  revision = createRevision(),
+  createdAt = Date.now()
+} = {}) {
   const definition = getArchetypeDefinition(archetype)
   if (!definition) return null
 
@@ -43,83 +101,142 @@ function saveLocalSelection(archetype, { pendingSync = true, playerId = null, re
     characterId: archetype,
     characterName: definition.name,
     pendingSync,
-    updatedAt: Date.now(),
+    createdAt,
     revision,
-    playerId
+    ownerPlayerId
   }
+  const cacheKey = typeof ownerPlayerId === 'string' && ownerPlayerId.trim()
+    ? `${PLAYER_CACHE_PREFIX}${encodeURIComponent(ownerPlayerId)}`
+    : UNOWNED_CACHE_KEY
+  const memorySelection = { ...selection, cacheKey, persistent: false }
+  memorySelections.set(cacheKey, memorySelection)
+  memoryLastCacheKey = cacheKey
 
   try {
-    localStorage.setItem(PLAYER_CACHE_KEY, JSON.stringify(selection))
+    localStorage.setItem(cacheKey, JSON.stringify(selection))
+    localStorage.setItem(PLAYER_CACHE_POINTER, cacheKey)
+    localStorage.removeItem(LEGACY_CACHE_KEY)
+    memorySelection.persistent = true
   } catch {
     // Keep the current selection usable if browser storage is unavailable.
   }
-  return selection
+  return { ...memorySelection }
 }
 
 function cacheConfirmedArchetype(profile, expectedRevision = null) {
   if (profile?.archetype_confirmed !== true || !ARCHETYPE_IDS.has(profile.archetype)) return false
-  const current = readLocalSelection()
+  const ownerPlayerId = profile.player_id
+  if (typeof ownerPlayerId !== 'string' || !ownerPlayerId.trim()) return false
+  const current = readLocalSelection(ownerPlayerId)
   if (expectedRevision && current?.revision !== expectedRevision) return false
   return Boolean(saveLocalSelection(profile.archetype, {
     pendingSync: false,
-    playerId: profile.player_id ?? current?.playerId ?? null,
+    ownerPlayerId,
     revision: current?.revision ?? createRevision()
   }))
 }
 
-function clearLocalSelection() {
+function clearLocalSelection(ownerPlayerId, expectedRevision = null) {
+  const cacheKey = typeof ownerPlayerId === 'string' && ownerPlayerId.trim()
+    ? `${PLAYER_CACHE_PREFIX}${encodeURIComponent(ownerPlayerId)}`
+    : UNOWNED_CACHE_KEY
+
   try {
-    localStorage.removeItem(PLAYER_CACHE_KEY)
+    const current = readLocalRecord(cacheKey)
+    if (expectedRevision && current?.revision !== expectedRevision) return
+    memorySelections.delete(cacheKey)
+    if (memoryLastCacheKey === cacheKey) memoryLastCacheKey = null
+    localStorage.removeItem(cacheKey)
+    if (localStorage.getItem(PLAYER_CACHE_POINTER) === cacheKey) {
+      localStorage.removeItem(PLAYER_CACHE_POINTER)
+    }
   } catch {
     // Storage is an optimization; the server remains authoritative.
   }
 }
 
-function retryBackendSync(revision, initialDelay = 1000) {
+function retryBackendSync(initialSelection, initialDelay = 1000) {
   let delay = 1000
 
   const retry = async () => {
-    const selection = readLocalSelection()
-    if (!selection || selection.revision !== revision) return
+    const selection = initialSelection.ownerPlayerId
+      ? readLocalSelection(initialSelection.ownerPlayerId)
+      : readLocalRecord(UNOWNED_CACHE_KEY)
+    if (!selection || selection.revision !== initialSelection.revision) return
+    if (!selection.ownerPlayerId) {
+      window.dispatchEvent(new CustomEvent('roku:archetype-sync-blocked', {
+        detail: { reason: 'missing-owner', revision: selection.revision }
+      }))
+      return
+    }
 
-    let profileReadSucceeded = false
+    let profile
     try {
       const payload = await requestPlayer('/player')
-      const profile = getPlayerProfile(payload)
-      profileReadSucceeded = true
-      if (profile?.archetype_confirmed === true && ARCHETYPE_IDS.has(profile.archetype)) {
-        cacheConfirmedArchetype(profile)
-        window.dispatchEvent(new CustomEvent('roku:archetype-synced', { detail: { archetype: profile.archetype } }))
+      profile = getPlayerProfile(payload)
+      if (typeof profile?.player_id !== 'string' || !profile.player_id.trim()) {
+        window.setTimeout(retry, delay)
+        delay = Math.min(delay * 2, 30000)
+        return
+      }
+
+      const currentSelection = readLocalSelection(selection.ownerPlayerId)
+      if (!currentSelection || currentSelection.revision !== selection.revision) {
+        if (currentSelection?.pendingSync) retryBackendSync(currentSelection, 0)
+        return
+      }
+
+      if (profile.player_id !== selection.ownerPlayerId) {
+        if (profile?.archetype_confirmed === true && ARCHETYPE_IDS.has(profile.archetype)) {
+          cacheConfirmedArchetype(profile)
+          window.dispatchEvent(new CustomEvent('roku:archetype-synced', {
+            detail: { archetype: profile.archetype, playerId: profile.player_id }
+          }))
+        } else {
+          window.dispatchEvent(new CustomEvent('roku:archetype-sync-blocked', {
+            detail: { reason: 'account-mismatch', revision: selection.revision }
+          }))
+        }
         return
       }
     } catch {
-      // Try the pending selection below if this profile read failed.
-    }
-
-    const latestSelection = readLocalSelection()
-    if (!latestSelection || latestSelection.revision !== revision) return
-
-    if (profileReadSucceeded && !latestSelection.pendingSync) {
-      clearLocalSelection()
-      window.dispatchEvent(new Event('roku:archetype-invalidated'))
+      window.setTimeout(retry, delay)
+      delay = Math.min(delay * 2, 30000)
       return
     }
+
+    if (profile?.archetype_confirmed === true && ARCHETYPE_IDS.has(profile.archetype)) {
+      if (!cacheConfirmedArchetype(profile, selection.revision)) return
+      window.dispatchEvent(new CustomEvent('roku:archetype-synced', {
+        detail: { archetype: profile.archetype, playerId: profile.player_id }
+      }))
+      return
+    }
+
+    const latestSelection = readLocalSelection(selection.ownerPlayerId)
+    if (!latestSelection || latestSelection.revision !== selection.revision) return
 
     if (latestSelection.pendingSync) {
       try {
         const payload = await saveArchetype(latestSelection.archetype)
         const profile = getPlayerProfile(payload)
-        if (profile?.archetype_confirmed === true && ARCHETYPE_IDS.has(profile.archetype)) {
-          if (profile.archetype === latestSelection.archetype) {
-            cacheConfirmedArchetype(profile, revision)
-          } else {
-            cacheConfirmedArchetype(profile)
+        if (profile?.player_id === latestSelection.ownerPlayerId
+          && profile?.archetype_confirmed === true
+          && ARCHETYPE_IDS.has(profile.archetype)) {
+          const currentSelection = readLocalSelection(latestSelection.ownerPlayerId)
+          if (currentSelection?.revision !== latestSelection.revision) {
+            if (currentSelection?.pendingSync) retryBackendSync(currentSelection, 0)
+            return
           }
-          window.dispatchEvent(new CustomEvent('roku:archetype-synced', { detail: { archetype: profile.archetype } }))
+          if (cacheConfirmedArchetype(profile, latestSelection.revision)) {
+            window.dispatchEvent(new CustomEvent('roku:archetype-synced', {
+              detail: { archetype: profile.archetype, playerId: profile.player_id }
+            }))
+          }
           return
         }
       } catch {
-        // Continue retrying while this exact local revision is pending.
+        // Continue retrying while this exact account-owned revision is pending.
       }
     }
 
@@ -127,7 +244,7 @@ function retryBackendSync(revision, initialDelay = 1000) {
     delay = Math.min(delay * 2, 30000)
   }
 
-  window.setTimeout(retry, initialDelay)
+  if (initialSelection.ownerPlayerId) window.setTimeout(retry, initialDelay)
 }
 
 function injectPaletteVariables() {
@@ -153,16 +270,29 @@ function injectPaletteVariables() {
 }
 
 async function requestPlayer(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',
-    ...options
-  })
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) {
-    throw new Error(payload?.error || `Player service returned ${response.status}.`)
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), CONFIG.api.requestTimeoutMs)
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: 'include',
+      ...options,
+      signal: controller.signal
+    })
+    const payload = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(payload?.error || `Player service returned ${response.status}.`)
+    }
+    if (payload?.ok === false) throw new Error(payload.error || 'The player service rejected the request.')
+    return payload
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Player service request timed out.')
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
   }
-  if (payload?.ok === false) throw new Error(payload.error || 'The player service rejected the request.')
-  return payload
 }
 
 function getPlayerProfile(payload) {
@@ -178,26 +308,45 @@ function saveArchetype(archetype) {
 }
 
 export async function initCharacterSelect() {
-  const cachedSelection = readLocalSelection()
-  if (cachedSelection) {
-    retryBackendSync(cachedSelection.revision, 0)
-    return {
-      archetype: cachedSelection.archetype,
-      syncState: cachedSelection.pendingSync ? 'pending-sync' : 'offline-cache'
-    }
-  }
-
+  let authenticatedPlayerId = null
   let profileError = null
 
   try {
     const payload = await requestPlayer('/player')
     const profile = getPlayerProfile(payload)
+    authenticatedPlayerId = typeof profile?.player_id === 'string' && profile.player_id.trim()
+      ? profile.player_id
+      : null
+
+    const cachedSelection = readLocalSelection(authenticatedPlayerId)
+    if (cachedSelection?.pendingSync) {
+      retryBackendSync(cachedSelection, 0)
+      return {
+        archetype: cachedSelection.archetype,
+        syncState: cachedSelection.persistent ? 'pending-sync' : 'session-only'
+      }
+    }
+
     if (profile?.archetype_confirmed === true && ARCHETYPE_IDS.has(profile.archetype)) {
       cacheConfirmedArchetype(profile)
       return { archetype: profile.archetype, syncState: 'server-confirmed' }
     }
+
+    if (cachedSelection) clearLocalSelection(authenticatedPlayerId, cachedSelection.revision)
   } catch (error) {
     profileError = error
+    const cachedSelection = readLastLocalSelection()
+    if (cachedSelection) {
+      if (cachedSelection.ownerPlayerId) retryBackendSync(cachedSelection, 0)
+      return {
+        archetype: cachedSelection.archetype,
+        syncState: cachedSelection.pendingSync
+          ? cachedSelection.ownerPlayerId
+            ? cachedSelection.persistent ? 'pending-sync' : 'session-only'
+            : 'account-unverified'
+          : 'offline-cache'
+      }
+    }
   }
 
   injectPaletteVariables()
@@ -278,13 +427,29 @@ export async function initCharacterSelect() {
       previewArchetype(id)
       confirmation.setBusy(true)
       status.classList.remove('is-error')
-      status.textContent = 'Saved locally. Synchronizing your permanent choice...'
-      const localSelection = saveLocalSelection(id, { pendingSync: true })
-      retryBackendSync(localSelection.revision, 0)
+      const localSelection = saveLocalSelection(id, {
+        pendingSync: true,
+        ownerPlayerId: authenticatedPlayerId
+      })
+      if (authenticatedPlayerId) {
+        status.textContent = localSelection.persistent
+          ? 'Saved on this device. Synchronizing your permanent choice...'
+          : 'Selected for this session. Browser storage is unavailable; synchronizing your permanent choice...'
+        retryBackendSync(localSelection, 0)
+      } else {
+        status.textContent = localSelection.persistent
+          ? 'Saved on this device. Account identity is unavailable, so synchronization is paused.'
+          : 'Selected for this session. Storage and account identity are unavailable, so synchronization is paused.'
+      }
       confirmation.close()
       characterPreview.destroy()
       overlay.remove()
-      resolve({ archetype: id, syncState: 'pending-sync' })
+      resolve({
+        archetype: id,
+        syncState: authenticatedPlayerId
+          ? localSelection.persistent ? 'pending-sync' : 'session-only'
+          : 'account-unverified'
+      })
     })
     overlay.appendChild(confirmation.element)
 
@@ -295,12 +460,18 @@ export async function initCharacterSelect() {
       try {
         const payload = await requestPlayer('/player')
         const profile = getPlayerProfile(payload)
+        authenticatedPlayerId = typeof profile?.player_id === 'string' && profile.player_id.trim()
+          ? profile.player_id
+          : null
         if (profile?.archetype_confirmed === true && ARCHETYPE_IDS.has(profile.archetype)) {
           cacheConfirmedArchetype(profile)
           characterPreview.destroy()
           overlay.remove()
           resolve({ archetype: profile.archetype, syncState: 'server-confirmed' })
           return
+        }
+        if (!authenticatedPlayerId) {
+          throw new Error('The player profile did not include an account ID.')
         }
         status.textContent = 'Choose an archetype to continue.'
         retry.hidden = true

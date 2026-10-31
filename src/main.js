@@ -188,11 +188,51 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
   return player
 }
 
+function replacePlayerModel(profession) {
+  if (!player?.group) return false
+
+  const liveGroup = player.group
+  const previousPlayer = player
+  const position = liveGroup.position.clone()
+  const quaternion = liveGroup.quaternion.clone()
+  const scale = liveGroup.scale.clone()
+  const visible = liveGroup.visible
+  const replacement = createCharacter(profession, playerName, CONFIG.characters.player)
+  const replacementVisuals = replacement.group.getObjectByName('CharacterVisuals')
+
+  if (!replacementVisuals) return false
+
+  const previousVisuals = liveGroup.children.filter(child => child.name === 'CharacterVisuals')
+  previousVisuals.forEach(visuals => {
+    liveGroup.remove(visuals)
+    visuals.traverse(object => object.geometry?.dispose())
+  })
+
+  replacement.group.remove(replacementVisuals)
+  liveGroup.add(replacementVisuals)
+  liveGroup.position.copy(position)
+  liveGroup.quaternion.copy(quaternion)
+  liveGroup.scale.copy(scale)
+  liveGroup.visible = visible
+  liveGroup.name = replacement.group.name
+
+  replacement.group = liveGroup
+  replacement.animationBaseY = previousPlayer.animationBaseY
+  replacement.animationTorsoY = previousPlayer.animationTorsoY
+  player = replacement
+  vehicleSystem?.setCharacter(player)
+  return true
+}
+
 function updatePlayerStatus() {
   if (!hudStatsElement || !loadedCountryCount || !currentProfession) return
   const syncStatus = archetypeServerConfirmed
     ? 'Server confirmed'
-    : archetypeSyncState === 'pending-sync' ? 'Pending sync' : 'Offline cached'
+    : archetypeSyncState === 'pending-sync' ? 'Pending sync'
+      : archetypeSyncState === 'session-only' ? 'Session only · sync pending'
+      : archetypeSyncState === 'account-unverified' ? 'Local only · account unverified'
+        : archetypeSyncState === 'sync-blocked' ? 'Sync blocked · account changed'
+          : 'Offline cached'
   hudStatsElement.textContent = `✓ ${loadedCountryCount} countries extruded • Player: ${currentProfession} • ${syncStatus} • Dubai`
 }
 
@@ -205,12 +245,15 @@ window.addEventListener('roku:archetype-synced', event => {
   archetypeSyncState = 'server-confirmed'
   if (currentProfession !== serverArchetype) {
     currentProfession = serverArchetype
-    if (player) spawnPlayer(currentProfession, playerName)
+    if (player) replacePlayerModel(currentProfession)
   }
   updatePlayerStatus()
 })
 
-window.addEventListener('roku:archetype-invalidated', () => window.location.reload())
+window.addEventListener('roku:archetype-sync-blocked', event => {
+  archetypeSyncState = event.detail?.reason === 'missing-owner' ? 'account-unverified' : 'sync-blocked'
+  updatePlayerStatus()
+})
 
 function focusPlayer() {
   if (!player) return
