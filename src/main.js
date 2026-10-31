@@ -161,6 +161,11 @@ function flyTo(x, y, z, lookX, lookY, lookZ) {
 let player = null
 let currentProfession = null
 let playerName = 'Tariq (Roku)'
+let archetypeServerConfirmed = false
+let archetypeSyncState = 'server-confirmed'
+let synchronizedArchetype = null
+let hudStatsElement = null
+let loadedCountryCount = 0
 const animationStart = performance.now()
 
 // Spawn position from CONFIG
@@ -182,6 +187,30 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
   scene.add(player.group)
   return player
 }
+
+function updatePlayerStatus() {
+  if (!hudStatsElement || !loadedCountryCount || !currentProfession) return
+  const syncStatus = archetypeServerConfirmed
+    ? 'Server confirmed'
+    : archetypeSyncState === 'pending-sync' ? 'Pending sync' : 'Offline cached'
+  hudStatsElement.textContent = `✓ ${loadedCountryCount} countries extruded • Player: ${currentProfession} • ${syncStatus} • Dubai`
+}
+
+window.addEventListener('roku:archetype-synced', event => {
+  const serverArchetype = event.detail?.archetype
+  if (serverArchetype !== 'warrior' && serverArchetype !== 'mage') return
+
+  synchronizedArchetype = serverArchetype
+  archetypeServerConfirmed = true
+  archetypeSyncState = 'server-confirmed'
+  if (currentProfession !== serverArchetype) {
+    currentProfession = serverArchetype
+    if (player) spawnPlayer(currentProfession, playerName)
+  }
+  updatePlayerStatus()
+})
+
+window.addEventListener('roku:archetype-invalidated', () => window.location.reload())
 
 function focusPlayer() {
   if (!player) return
@@ -246,14 +275,19 @@ async function init() {
   const loadingOverlay = document.getElementById('loading-overlay')
   const loadingStatus = document.getElementById('loading-status')
   const hudStats = document.getElementById('hud-stats')
+  hudStatsElement = hudStats
 
   try {
     loadingStatus.textContent = 'Checking player archetype...'
-    currentProfession = await initCharacterSelect()
+    const selection = await initCharacterSelect()
+    currentProfession = synchronizedArchetype ?? selection.archetype
+    archetypeSyncState = selection.syncState
+    archetypeServerConfirmed = selection.syncState === 'server-confirmed' || Boolean(synchronizedArchetype)
 
     loadingStatus.textContent = 'Generating continent 3D meshes...'
     const terrainData = await createWorldTerrain(scene, '/assets/world.geojson')
     terrainRef = terrainData
+    loadedCountryCount = terrainData.totalCountries
 
     // Spawn player character (Step 3 & 7)
     spawnPlayer(currentProfession, playerName)
@@ -290,7 +324,7 @@ async function init() {
     camera.position.set(spawnPos.x + 3.5, spawnPos.y + 2.5, spawnPos.z + 4.5)
     cameraController.syncToPlayer(player.group)
 
-    hudStats.textContent = `✓ ${terrainData.totalCountries} countries extruded • Player: ${currentProfession} • Dubai`
+    updatePlayerStatus()
 
     setupUI()
 
