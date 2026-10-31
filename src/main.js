@@ -8,6 +8,7 @@ import { createVehicleSystem } from './vehicles/vehicle.js'
 import { CONFIG } from './config.js'
 import { PALETTE } from './palette.js'
 import { getToonMaterial } from './materials.js'
+import { initCharacterSelect } from './character-selection/CharacterSelection.js'
 
 // Setup canvas and renderer
 const canvas = document.getElementById('game-canvas')
@@ -158,8 +159,13 @@ function flyTo(x, y, z, lookX, lookY, lookZ) {
 
 // Player state (Step 3 & 7)
 let player = null
-let currentProfession = 'wayfarer'
+let currentProfession = null
 let playerName = 'Tariq (Roku)'
+let archetypeServerConfirmed = false
+let archetypeSyncState = 'server-confirmed'
+let synchronizedArchetype = null
+let hudStatsElement = null
+let loadedCountryCount = 0
 const animationStart = performance.now()
 
 // Spawn position from CONFIG
@@ -181,6 +187,73 @@ function spawnPlayer(profession = currentProfession, name = playerName) {
   scene.add(player.group)
   return player
 }
+
+function replacePlayerModel(profession) {
+  if (!player?.group) return false
+
+  const liveGroup = player.group
+  const previousPlayer = player
+  const position = liveGroup.position.clone()
+  const quaternion = liveGroup.quaternion.clone()
+  const scale = liveGroup.scale.clone()
+  const visible = liveGroup.visible
+  const replacement = createCharacter(profession, playerName, CONFIG.characters.player)
+  const replacementVisuals = replacement.group.getObjectByName('CharacterVisuals')
+
+  if (!replacementVisuals) return false
+
+  const previousVisuals = liveGroup.children.filter(child => child.name === 'CharacterVisuals')
+  previousVisuals.forEach(visuals => {
+    liveGroup.remove(visuals)
+    visuals.traverse(object => object.geometry?.dispose())
+  })
+
+  replacement.group.remove(replacementVisuals)
+  liveGroup.add(replacementVisuals)
+  liveGroup.position.copy(position)
+  liveGroup.quaternion.copy(quaternion)
+  liveGroup.scale.copy(scale)
+  liveGroup.visible = visible
+  liveGroup.name = replacement.group.name
+
+  replacement.group = liveGroup
+  replacement.animationBaseY = previousPlayer.animationBaseY
+  replacement.animationTorsoY = previousPlayer.animationTorsoY
+  player = replacement
+  vehicleSystem?.setCharacter(player)
+  return true
+}
+
+function updatePlayerStatus() {
+  if (!hudStatsElement || !loadedCountryCount || !currentProfession) return
+  const syncStatus = archetypeServerConfirmed
+    ? 'Server confirmed'
+    : archetypeSyncState === 'pending-sync' ? 'Pending sync'
+      : archetypeSyncState === 'session-only' ? 'Session only · sync pending'
+      : archetypeSyncState === 'account-unverified' ? 'Local only · account unverified'
+        : archetypeSyncState === 'sync-blocked' ? 'Sync blocked · account changed'
+          : 'Offline cached'
+  hudStatsElement.textContent = `✓ ${loadedCountryCount} countries extruded • Player: ${currentProfession} • ${syncStatus} • Dubai`
+}
+
+window.addEventListener('roku:archetype-synced', event => {
+  const serverArchetype = event.detail?.archetype
+  if (serverArchetype !== 'warrior' && serverArchetype !== 'mage') return
+
+  synchronizedArchetype = serverArchetype
+  archetypeServerConfirmed = true
+  archetypeSyncState = 'server-confirmed'
+  if (currentProfession !== serverArchetype) {
+    currentProfession = serverArchetype
+    if (player) replacePlayerModel(currentProfession)
+  }
+  updatePlayerStatus()
+})
+
+window.addEventListener('roku:archetype-sync-blocked', event => {
+  archetypeSyncState = event.detail?.reason === 'missing-owner' ? 'account-unverified' : 'sync-blocked'
+  updatePlayerStatus()
+})
 
 function focusPlayer() {
   if (!player) return
@@ -231,16 +304,6 @@ function setupUI() {
     })
   }
 
-  // Step 3 profession switcher buttons
-  const profButtons = document.querySelectorAll('.prof-btn')
-  profButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      profButtons.forEach(b => b.classList.remove('active'))
-      btn.classList.add('active')
-      currentProfession = btn.dataset.prof
-      spawnPlayer(currentProfession, playerName)
-    })
-  })
 }
 
 // Window resize handler
@@ -255,11 +318,19 @@ async function init() {
   const loadingOverlay = document.getElementById('loading-overlay')
   const loadingStatus = document.getElementById('loading-status')
   const hudStats = document.getElementById('hud-stats')
+  hudStatsElement = hudStats
 
   try {
+    loadingStatus.textContent = 'Checking player archetype...'
+    const selection = await initCharacterSelect()
+    currentProfession = synchronizedArchetype ?? selection.archetype
+    archetypeSyncState = selection.syncState
+    archetypeServerConfirmed = selection.syncState === 'server-confirmed' || Boolean(synchronizedArchetype)
+
     loadingStatus.textContent = 'Generating continent 3D meshes...'
     const terrainData = await createWorldTerrain(scene, '/assets/world.geojson')
     terrainRef = terrainData
+    loadedCountryCount = terrainData.totalCountries
 
     // Spawn player character (Step 3 & 7)
     spawnPlayer(currentProfession, playerName)
@@ -296,7 +367,7 @@ async function init() {
     camera.position.set(spawnPos.x + 3.5, spawnPos.y + 2.5, spawnPos.z + 4.5)
     cameraController.syncToPlayer(player.group)
 
-    hudStats.textContent = `✓ ${terrainData.totalCountries} countries extruded • Player: ${currentProfession} • Dubai`
+    updatePlayerStatus()
 
     setupUI()
 
